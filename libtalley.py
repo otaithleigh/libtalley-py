@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import collections
 import numpy as np
 import os
 import pickle
@@ -106,6 +107,38 @@ def print_table(headers, data, datafmt='cols', tablefmt='pipe', stream=sys.stdou
     print(tabulated, file=stream)
 
     return tabulated
+
+
+def recursive_update(d: dict, u: dict) -> dict:
+    """Recursively update a nested dictionary.
+    
+    Parameters
+    ----------
+    d:
+        ``dict`` to update.
+    u:
+        ``dict`` to use for updating.
+
+    Example
+    -------
+    >>> d = {'a': {1: 2}}
+    >>> u = {'a': {2: 1}}
+    >>> recursive_update(d, u)
+    {'a': {1: 2, 2: 1}}
+
+    Compare:
+    >>> d.update(u)
+    >>> print(d)
+    {'a': {2: 1}}
+
+    Source: https://stackoverflow.com/questions/3232943/update-value-of-a-nested-dictionary-of-varying-depth#3233356
+    """
+    for k, v in u.items():
+        if isinstance(v, collections.Mapping):
+            d[k] = recursive_update(d.get(k, {}), v)
+        else:
+            d[k] = v
+    return d
 
 
 class Color:
