@@ -303,6 +303,44 @@ def lightest_shape(shape_list: t.List[str]):
     return shapes.AISC_Manual_Label[shapes.W[shapes.AISC_Manual_Label.isin(shape_list)].idxmin()]
 
 
+def latex_name(shape):
+    """Return LaTeX code for nicely typesetting a steel section name.
+    
+    Assumes the "by" part of the section is represented by an 'X', and that
+    compound fractions are separated by '-' (hyphen, not endash). Output requires
+    the LaTeX package ``nicefrac`` or its superpackage, ``units``.
+
+    Only tested on W and HSS names so far.
+
+    Parameters
+    ----------
+    shape:
+        Name of a steel section.
+
+    Example
+    -------
+    >>> name = 'HSS3-1/2X3-1/2X3/16'
+    >>> latex_name(name)
+    'HSS3-\\nicefrac{1}{2}$\\times$3-\\nicefrac{1}{2}$\\times$\\nicefrac{3}{16}'
+    """
+
+    def frac_to_nicefrac(frac):
+        """Return LaTeX code for a nicefrac from a fraction like '3/16'. No compound fractions!"""
+        (numer, denom) = frac.split('/')
+        return f"\\nicefrac{{{numer}}}{{{denom}}}"
+
+    shape_parts = shape.split('X')
+    for [index, part] in enumerate(shape_parts):
+        if '/' in part and '-' in part: # need to activate compound fraction logic
+            (front, frac) = part.split('-')
+            newfrac = frac_to_nicefrac(frac)
+            shape_parts[index] = front + '-' + newfrac
+        elif '/' in part: # need to activate fraction logic
+            shape_parts[index] = frac_to_nicefrac(part)
+            
+    return '$\\times$'.join(shape_parts)
+
+
 #### Initialization ####
 logging.basicConfig()
 logger = logging.getLogger(__name__)
