@@ -11,6 +11,9 @@ A collection of helpful functions, classes, and files.
 `fema_p695`:
 - Helper functions for FEMA P695 studies. Ported from Mark Denavit's MATLAB code.
 
+`latex_format`:
+- Functions that format strings into LaTeX representations.
+
 ## Packages
 
 `asce7_16`:

@@ -5,7 +5,8 @@ setup(
     py_modules=[
         'libtalley',
         'steeldesign',
-        'fema_p695'
+        'fema_p695',
+        'latex_format',
     ],
     packages=[
         'asce7_16',
