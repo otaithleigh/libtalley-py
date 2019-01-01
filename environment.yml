@@ -9,3 +9,6 @@ dependencies:
   - scipy
   - tabulate
   - xlrd
+  - pylint
+  - yapf
+  - ipython
