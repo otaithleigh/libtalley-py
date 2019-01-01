@@ -247,7 +247,7 @@ def fundamental_period(hn, Ct, x, sdc):
     Ta = asce7_16.seismic.approximate_period(hn, Ct, x)
     Cu = asce7_16.seismic.period_upper_limit_coeff(SD1)
 
-    return Cu*Ta
+    return np.maximum(Cu*Ta, 0.25)
 
 def seismic_response_coeff(R, T, sdc):
     """Calculate the seismic response coefficient, C_s.
