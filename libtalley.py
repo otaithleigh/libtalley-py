@@ -217,34 +217,36 @@ class Color:
         See https://github.com/denavit/MATLAB-Library for more details.
         """
         try:
-            color = _TENNESSEE_COLORS[color_name.lower()]
+            color = cls._TENNESSEE_COLORS[color_name.lower()]
         except KeyError:
-            raise ValueError(f"TennesseeColor: unrecognized color name {color_name!r}")
+            raise ValueError(f"fromTennesseePalette: unrecognized color name {color_name!r}")
 
         return cls(rgb=color['rgb'], cmyk=color['cmyk'])
-
     
-# yapf: disable
-_TENNESSEE_COLORS = {
-    'orange':      { 'rgb': (255, 130,   0), 'cmyk': (  0,  50, 100,   0) },
-    'white':       { 'rgb': (255, 255, 255), 'cmyk': (  0,   0,   0,   0) },
-    'smokey':      { 'rgb': ( 88,  89,  91), 'cmyk': (  0,   0,   0,  80) },
-    'valley':      { 'rgb': (  0, 116, 111), 'cmyk': (100,  50,  65,   0) },
-    'torch':       { 'rgb': (230,  89,  51), 'cmyk': (  0,  85, 100,   0) },
-    'globe':       { 'rgb': (  0, 108, 147), 'cmyk': (100,  18,  10,  50) },
-    'limestone':   { 'rgb': (240, 237, 227), 'cmyk': (  5,   5,  10,   0) },
-    'river':       { 'rgb': ( 81, 124, 150), 'cmyk': ( 70,  40,  25,  10) },
-    'leconte':     { 'rgb': (141,  32,  72), 'cmyk': ( 40, 100,  60,  30) },
-    'regalia':     { 'rgb': (117,  74, 126), 'cmyk': ( 55, 100,  25,  25) },
-    'sunsphere':   { 'rgb': (254, 213,  53), 'cmyk': (  0,  20,  90,   0) },
-    'rock':        { 'rgb': (167, 169, 172), 'cmyk': (  0,   0,   0,  40) },
-    'legacy':      { 'rgb': ( 87, 149, 132), 'cmyk': ( 65,  20,  50,  10) },
-    'summitt':     { 'rgb': (185, 225, 226), 'cmyk': ( 25,   0,  10,   0) },
-    'buckskin':    { 'rgb': (112,  85,  80), 'cmyk': ( 60,  70,  70,  15) },
-    'energy':      { 'rgb': (238,  62, 128), 'cmyk': (  0,  90,  20,   0) },
-    'switchgrass': { 'rgb': (171, 193, 120), 'cmyk': ( 25,   0,  80,  10) },
-    'fountain':    { 'rgb': ( 33, 151, 169), 'cmyk': ( 75,  15,  25,  10) },
-    'eureka':      { 'rgb': (235, 234, 100), 'cmyk': ( 10,   0,  75,   0) },
-}
-_TENNESSEE_COLORS['eureka!'] = _TENNESSEE_COLORS['eureka']
-# yapf: enable
+    # yapf: disable
+    _TENNESSEE_COLORS = {
+        'orange':      { 'rgb': (255, 130,   0), 'cmyk': (  0,  50, 100,   0) },
+        'white':       { 'rgb': (255, 255, 255), 'cmyk': (  0,   0,   0,   0) },
+        'smokey':      { 'rgb': ( 88,  89,  91), 'cmyk': (  0,   0,   0,  80) },
+        'valley':      { 'rgb': (  0, 116, 111), 'cmyk': (100,  50,  65,   0) },
+        'torch':       { 'rgb': (230,  89,  51), 'cmyk': (  0,  85, 100,   0) },
+        'globe':       { 'rgb': (  0, 108, 147), 'cmyk': (100,  18,  10,  50) },
+        'limestone':   { 'rgb': (240, 237, 227), 'cmyk': (  5,   5,  10,   0) },
+        'river':       { 'rgb': ( 81, 124, 150), 'cmyk': ( 70,  40,  25,  10) },
+        'leconte':     { 'rgb': (141,  32,  72), 'cmyk': ( 40, 100,  60,  30) },
+        'regalia':     { 'rgb': (117,  74, 126), 'cmyk': ( 55, 100,  25,  25) },
+        'sunsphere':   { 'rgb': (254, 213,  53), 'cmyk': (  0,  20,  90,   0) },
+        'rock':        { 'rgb': (167, 169, 172), 'cmyk': (  0,   0,   0,  40) },
+        'legacy':      { 'rgb': ( 87, 149, 132), 'cmyk': ( 65,  20,  50,  10) },
+        'summitt':     { 'rgb': (185, 225, 226), 'cmyk': ( 25,   0,  10,   0) },
+        'buckskin':    { 'rgb': (112,  85,  80), 'cmyk': ( 60,  70,  70,  15) },
+        'energy':      { 'rgb': (238,  62, 128), 'cmyk': (  0,  90,  20,   0) },
+        'switchgrass': { 'rgb': (171, 193, 120), 'cmyk': ( 25,   0,  80,  10) },
+        'fountain':    { 'rgb': ( 33, 151, 169), 'cmyk': ( 75,  15,  25,  10) },
+        'eureka':      { 'rgb': (235, 234, 100), 'cmyk': ( 10,   0,  75,   0) },
+        'eureka!':     { 'rgb': (235, 234, 100), 'cmyk': ( 10,   0,  75,   0) },
+    }
+    # yapf: enable
+
+# In case some of my code still uses the module level variable
+_TENNESSEE_COLORS = Color._TENNESSEE_COLORS
