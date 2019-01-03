@@ -1,1 +1,1 @@
-import asce7_16.seismic
+from . import seismic

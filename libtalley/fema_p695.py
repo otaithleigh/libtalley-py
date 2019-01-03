@@ -1,11 +1,14 @@
-import asce7_16
+from __future__ import annotations
+
 import enum
-import numpy as np
 import sys
+
+import numpy as np
 from scipy.stats import lognorm
 from scipy.optimize import fsolve
 from scipy.interpolate import interp1d, interp2d
 
+from . import asce7_16
 
 def acmrxx(beta_total, collapse_prob, xin=0.622):
     """Compute the acceptable value of the adjusted collapse margin ratio (ACMR).
