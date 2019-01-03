@@ -2,7 +2,10 @@ from setuptools import setup
 setup(
     name="libtalley",
     version="0.2.0",
-    packages=['libtalley'],
+    packages=[
+        'libtalley',
+        'libtalley.asce7_16',
+    ],
     package_data={
         'libtalley': [
             'aisc-shapes-database-v15.0.xlsx',
