@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import enum
-import sys
+import warnings
 
 import numpy as np
 from scipy.stats import lognorm
@@ -9,6 +9,7 @@ from scipy.optimize import fsolve
 from scipy.interpolate import interp1d, interp2d
 
 from . import asce7_16
+
 
 def acmrxx(beta_total, collapse_prob, xin=0.622):
     """Compute the acceptable value of the adjusted collapse margin ratio (ACMR).
@@ -24,12 +25,15 @@ def acmrxx(beta_total, collapse_prob, xin=0.622):
 
     Ref: FEMA P695 Section 7.4
     """
+
     # Solve lognorm.cdf as a substitute for MATLAB's logninv function
     def f(x):
         return lognorm.cdf(x, beta_total) - collapse_prob
+
     X = fsolve(f, xin)
 
     return 1/X[0]
+
 
 # Uncertainty values for each rating
 _rating_values = {
@@ -38,6 +42,7 @@ _rating_values = {
     'C': 0.35,
     'D': 0.50,
 }
+
 
 def beta_total(rating_DR: str, rating_TD: str, rating_MDL: str, mu_T=3.0) -> float:
     """Compute the total uncertainty present in th system.
@@ -52,7 +57,7 @@ def beta_total(rating_DR: str, rating_TD: str, rating_MDL: str, mu_T=3.0) -> flo
         Rating of the model's representation of the system
     mu_T:
         Period-based ductility
-    
+
     Ref: FEMA P695 Section 7.3.1
     """
     beta_DR = _rating_values[rating_DR.upper()]
@@ -67,7 +72,7 @@ def beta_total(rating_DR: str, rating_TD: str, rating_MDL: str, mu_T=3.0) -> flo
 _mapped_value_dict = {
     "dmax": {
         "ss": 1.5,
-        "s1": 0.59999999999, # Actually 0.60 but "should be taken as less than 0.60" *eyeroll*
+        "s1": 0.59999999999,  # Actually 0.60 but "should be taken as less than 0.60" *eyeroll*
         "fa": 1.0,
         "fv": 1.50,
         "sms": 1.50,
@@ -106,15 +111,17 @@ _mapped_value_dict = {
         "sms": 0.25,
         "sm1": 0.10,
         "sds": 0.167,
-        "sd1": 0.067,        
+        "sd1": 0.067,
         "ts": 0.40,
     }
 }
 _mapped_value_dict["cmax"] = _mapped_value_dict["dmin"]
 _mapped_value_dict["bmax"] = _mapped_value_dict["cmin"]
+
+
 def mapped_value(value: str, sdc: str):
     """Retrieve the mapped seismic parameter for a given design category.
-    
+
     Parameters
     ----------
     value:
@@ -123,14 +130,19 @@ def mapped_value(value: str, sdc: str):
     return _mapped_value_dict[sdc.lower()][value.lower()]
 
 
-_T_INTERP    = [0.25, 0.30, 0.35, 0.40, 0.45, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.2,
-                1.4, 1.6, 1.8, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.5, 4.0, 4.5, 5.0]
-_SNRT_INTERP = [0.785, 0.781, 0.767, 0.754, 0.755, 0.742, 0.607, 0.541, 0.453, 0.402,
-                0.350, 0.303, 0.258, 0.210, 0.169, 0.149, 0.134, 0.119, 0.106, 0.092,
-                0.081, 0.063, 0.053, 0.046, 0.041]
+_T_INTERP = [
+    0.25, 0.30, 0.35, 0.40, 0.45, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.2, 2.4,
+    2.6, 2.8, 3.0, 3.5, 4.0, 4.5, 5.0
+]
+_SNRT_INTERP = [
+    0.785, 0.781, 0.767, 0.754, 0.755, 0.742, 0.607, 0.541, 0.453, 0.402, 0.350, 0.303, 0.258,
+    0.210, 0.169, 0.149, 0.134, 0.119, 0.106, 0.092, 0.081, 0.063, 0.053, 0.046, 0.041
+]
+
+
 def sf1(T, sdc):
     """Calculate scale factor 1, which scales ground motions to the MCE.
-    
+
     Parameters
     ----------
     T:
@@ -138,12 +150,12 @@ def sf1(T, sdc):
     sdc:
         Seismic design category
 
-    Ref: FEMA P695 Section 
+    Ref: FEMA P695 Section
     """
 
     if T <= _T_INTERP[0] or T >= _T_INTERP[-1]:
         raise ValueError(f"Period is out of range: T = {T}")
-    
+
     f = interp1d(_T_INTERP, _SNRT_INTERP)
     SNRT = f(T)
     SMT = smt(T, sdc)
@@ -174,32 +186,34 @@ def smt(T, sdc):
 #
 
 _Z_SSF_DICT = {
-    "Dmax": np.matrix([
-        [1.00, 1.05, 1.10, 1.13, 1.18, 1.22, 1.28, 1.33],
-        [1.00, 1.05, 1.11, 1.14, 1.20, 1.24, 1.30, 1.36],
-        [1.00, 1.06, 1.11, 1.15, 1.21, 1.25, 1.32, 1.38],
-        [1.00, 1.06, 1.12, 1.16, 1.22, 1.27, 1.35, 1.41],
-        [1.00, 1.06, 1.13, 1.17, 1.24, 1.29, 1.37, 1.44],
-        [1.00, 1.07, 1.13, 1.18, 1.25, 1.31, 1.39, 1.46],
-        [1.00, 1.07, 1.14, 1.19, 1.27, 1.32, 1.41, 1.49],
-        [1.00, 1.07, 1.15, 1.20, 1.28, 1.34, 1.44, 1.52],
-        [1.00, 1.08, 1.16, 1.21, 1.29, 1.36, 1.46, 1.55],
-        [1.00, 1.08, 1.16, 1.22, 1.31, 1.38, 1.49, 1.58],
-        [1.00, 1.08, 1.17, 1.23, 1.32, 1.40, 1.51, 1.61],
-    ]),
-    "Dmin": np.matrix([
-        [1.00, 1.02, 1.04, 1.06, 1.08, 1.09, 1.12, 1.14],
-        [1.00, 1.02, 1.05, 1.07, 1.09, 1.11, 1.13, 1.16],
-        [1.00, 1.03, 1.06, 1.08, 1.10, 1.12, 1.15, 1.18],
-        [1.00, 1.03, 1.06, 1.08, 1.11, 1.14, 1.17, 1.20],
-        [1.00, 1.03, 1.07, 1.09, 1.13, 1.15, 1.19, 1.22],
-        [1.00, 1.04, 1.08, 1.10, 1.14, 1.17, 1.21, 1.25],
-        [1.00, 1.04, 1.08, 1.11, 1.15, 1.18, 1.23, 1.27],
-        [1.00, 1.04, 1.09, 1.12, 1.17, 1.20, 1.25, 1.30],
-        [1.00, 1.05, 1.10, 1.13, 1.18, 1.22, 1.27, 1.32],
-        [1.00, 1.05, 1.10, 1.14, 1.19, 1.23, 1.30, 1.35],
-        [1.00, 1.05, 1.11, 1.15, 1.21, 1.25, 1.32, 1.37],
-    ])
+    "Dmax":
+        np.matrix([
+            [1.00, 1.05, 1.10, 1.13, 1.18, 1.22, 1.28, 1.33],
+            [1.00, 1.05, 1.11, 1.14, 1.20, 1.24, 1.30, 1.36],
+            [1.00, 1.06, 1.11, 1.15, 1.21, 1.25, 1.32, 1.38],
+            [1.00, 1.06, 1.12, 1.16, 1.22, 1.27, 1.35, 1.41],
+            [1.00, 1.06, 1.13, 1.17, 1.24, 1.29, 1.37, 1.44],
+            [1.00, 1.07, 1.13, 1.18, 1.25, 1.31, 1.39, 1.46],
+            [1.00, 1.07, 1.14, 1.19, 1.27, 1.32, 1.41, 1.49],
+            [1.00, 1.07, 1.15, 1.20, 1.28, 1.34, 1.44, 1.52],
+            [1.00, 1.08, 1.16, 1.21, 1.29, 1.36, 1.46, 1.55],
+            [1.00, 1.08, 1.16, 1.22, 1.31, 1.38, 1.49, 1.58],
+            [1.00, 1.08, 1.17, 1.23, 1.32, 1.40, 1.51, 1.61],
+        ]),
+    "Dmin":
+        np.matrix([
+            [1.00, 1.02, 1.04, 1.06, 1.08, 1.09, 1.12, 1.14],
+            [1.00, 1.02, 1.05, 1.07, 1.09, 1.11, 1.13, 1.16],
+            [1.00, 1.03, 1.06, 1.08, 1.10, 1.12, 1.15, 1.18],
+            [1.00, 1.03, 1.06, 1.08, 1.11, 1.14, 1.17, 1.20],
+            [1.00, 1.03, 1.07, 1.09, 1.13, 1.15, 1.19, 1.22],
+            [1.00, 1.04, 1.08, 1.10, 1.14, 1.17, 1.21, 1.25],
+            [1.00, 1.04, 1.08, 1.11, 1.15, 1.18, 1.23, 1.27],
+            [1.00, 1.04, 1.09, 1.12, 1.17, 1.20, 1.25, 1.30],
+            [1.00, 1.05, 1.10, 1.13, 1.18, 1.22, 1.27, 1.32],
+            [1.00, 1.05, 1.10, 1.14, 1.19, 1.23, 1.30, 1.35],
+            [1.00, 1.05, 1.11, 1.15, 1.21, 1.25, 1.32, 1.37],
+        ])
 }
 _Z_SSF_DICT["Cmax"] = _Z_SSF_DICT["Dmin"]
 _Z_SSF_DICT["Cmin"] = _Z_SSF_DICT["Dmin"]
@@ -207,11 +221,12 @@ _Z_SSF_DICT["Bmax"] = _Z_SSF_DICT["Dmin"]
 _Z_SSF_DICT["Bmin"] = _Z_SSF_DICT["Dmin"]
 
 _X_MU_T = [1.0, 1.1, 1.5, 2, 3, 4, 6, 8]
-_Y_T    = [0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5]
+_Y_T = [0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5]
+
 
 def ssf(T, mu_t, sdc):
     """Compute the spectral shape factor (SSF).
-    
+
     Parameters
     ----------
     T:
@@ -221,17 +236,17 @@ def ssf(T, mu_t, sdc):
     sdc:
         Seismic design category
 
-    Ref: FEMA P695 Section 
+    Ref: FEMA P695 Section
     """
 
     try:
         Z_SSF = _Z_SSF_DICT[sdc]
     except KeyError:
         raise ValueError(f"Unknown seismic design category: {sdc}")
-    
+
     if mu_t < 1:
         raise ValueError("mu_t must be greater than or equal to 1")
-    
+
     if T <= 0.5:
         if mu_t >= 8:
             ssf = Z_SSF[0, -1]
@@ -253,6 +268,7 @@ def ssf(T, mu_t, sdc):
             ssf = f(mu_t, T)[0]
 
     return ssf
+
 
 def fundamental_period(hn, Ct, x, sdc):
     """Calculate the fundamental period of the structure.
@@ -284,6 +300,7 @@ def fundamental_period(hn, Ct, x, sdc):
 
     return np.maximum(Cu*Ta, 0.25)
 
+
 def seismic_response_coeff(R, T, sdc):
     """Calculate the seismic response coefficient, C_s.
 
@@ -295,14 +312,14 @@ def seismic_response_coeff(R, T, sdc):
         Fundamental period (s).
     sdc:
         Seismic design category (Dmax, Dmin, etc.).
-    
+
     Note that this function follows the assumptions and restrictions enforced by
     FEMA P695; namely, it is used only with mapped values from the
     ``mapped_values`` function, and for structures with periods of 4.0 s or
     lower. For a more general function, see ``asce7_16.seismic_response_coeff``.
     """
     if T > 4.0:
-        print(f"WARNING: Period out of bounds (T = {T} s). Response coefficient may not be valid.", file=sys.stderr)
+        warnings.warn(f"seismic_response_coeff: Given period (T = {T} s) is out of FEMA P695 range")
 
     Ts = mapped_value('Ts', sdc)
     SD1 = mapped_value('SD1', sdc)
@@ -312,7 +329,7 @@ def seismic_response_coeff(R, T, sdc):
         Cs = SDS/R
     else:
         Cs = max(SD1/(T*R), 0.044*SDS)
-    
+
     Cs = max(Cs, 0.01)
 
     return Cs
