@@ -152,6 +152,15 @@ def sf1(T, sdc):
 
 
 def smt(T, sdc):
+    """Calculate the SMT.
+
+    Parameters
+    ----------
+    T : float
+        Fundamental period of the structure (seconds)
+    sdc : str
+        Seismic design category
+    """
     SM1 = mapped_value("SM1", sdc)
     SMS = mapped_value("SMS", sdc)
     if T <= SM1/SMS:
@@ -246,6 +255,29 @@ def ssf(T, mu_t, sdc):
     return ssf
 
 def fundamental_period(hn, Ct, x, sdc):
+    """Calculate the fundamental period of the structure.
+
+    Uses the following equation:
+
+    .. math:: T = \\max(C_u C_t h_n^x, 0.25)
+
+    Where :math:`C_u` is the coefficient on the upper limit of the calculated
+    period from ASCE 7.
+
+    Parameters
+    ----------
+    hn : float
+        Height of the structure (ft)
+    Ct : float
+        Building period coefficient.
+    x : float
+        Exponent on building height.
+
+    Returns
+    -------
+    T : float
+        Fundamental period in seconds.
+    """
     SD1 = mapped_value('SD1', sdc)
     Ta = asce7_16.seismic.approximate_period(hn, Ct, x)
     Cu = asce7_16.seismic.period_upper_limit_coeff(SD1)
