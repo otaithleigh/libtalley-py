@@ -5,15 +5,15 @@ import warnings
 class Boxer():
     """Class for creating plaintext "boxes".
     
-    A box is defined by several parameters, laid out so:
+    A box is defined by several parameters, laid out so::
 
-    |<------------------ width ------------------>|
-    <first><------------ rule -------------><right>
-    <left><lpad><------- text -------><rpad><right>
-    <left><lpad><------- text -------><rpad><right>
-    <left><lpad><------- text -------><rpad><right>
-    <left><lpad><------- text -------><rpad><right>
-    <left><------------- rule -------------><final>
+        |<------------------ width ------------------>|
+        <first><------------ rule -------------><right>
+        <left><lpad><------- text -------><rpad><right>
+        <left><lpad><------- text -------><rpad><right>
+        <left><lpad><------- text -------><rpad><right>
+        <left><lpad><------- text -------><rpad><right>
+        <left><------------- rule -------------><final>
     """
 
     def __init__(self, left, right, rule, pad=' ', first=None, final=None, rpad=None):
