@@ -1,7 +1,7 @@
 from setuptools import setup
 setup(
     name="libtalley",
-    version="0.4.1",
+    version="0.5.0",
     packages=[
         'libtalley',
         'libtalley.asce7_16',
