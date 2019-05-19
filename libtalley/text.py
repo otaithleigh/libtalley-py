@@ -4,7 +4,7 @@ import warnings
 
 class Boxer():
     """Class for creating plaintext "boxes".
-    
+
     A box is defined by several parameters, laid out so::
 
         |<------------------ width ------------------>|
@@ -50,7 +50,7 @@ class Boxer():
 
     def textwidth(self, width=80):
         """Return the available width in characters for the Boxer.
-        
+
         Parameters
         ----------
         width : int, optional
@@ -144,7 +144,7 @@ _PyBoxer = Boxer(left='#', right='#', rule='=')
 
 def cbox(text, width=80, wrap=True):
     """Place text in a C-style multiline comment box.
-    
+
     Parameters
     ----------
     text : str
@@ -163,3 +163,41 @@ def cbox(text, width=80, wrap=True):
      ******************************************************************************/
     """
     return _CBoxer.box(text, width=width, wrap=wrap)
+
+
+def latex_name(shape):
+    """Return LaTeX code for nicely typesetting a steel section name.
+
+    Assumes the "by" part of the section is represented by an 'X', and that
+    compound fractions are separated by '-' (hyphen, not endash). Output requires
+    the LaTeX package ``nicefrac`` or its superpackage, ``units``.
+
+    Only tested on W and HSS names so far.
+
+    Parameters
+    ----------
+    shape:
+        Name of a steel section.
+
+    Example
+    -------
+    >>> name = 'HSS3-1/2X3-1/2X3/16'
+    >>> latex_name(name)
+    'HSS3-\\nicefrac{1}{2}$\\times$3-\\nicefrac{1}{2}$\\times$\\nicefrac{3}{16}'
+    """
+
+    def frac_to_nicefrac(frac):
+        """Return LaTeX code for a nicefrac from a fraction like '3/16'. No compound fractions!"""
+        (numer, denom) = frac.split('/')
+        return f"\\nicefrac{{{numer}}}{{{denom}}}"
+
+    shape_parts = shape.split('X')
+    for [index, part] in enumerate(shape_parts):
+        if '/' in part and '-' in part:  # need to activate compound fraction logic
+            (front, frac) = part.split('-')
+            newfrac = frac_to_nicefrac(frac)
+            shape_parts[index] = front + '-' + newfrac
+        elif '/' in part:  # need to activate fraction logic
+            shape_parts[index] = frac_to_nicefrac(part)
+
+    return '$\\times$'.join(shape_parts)

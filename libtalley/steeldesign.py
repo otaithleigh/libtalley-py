@@ -1,233 +1,412 @@
-from __future__ import annotations
-
+import dataclasses
 import enum
-import logging
+import fractions
 import os
-import pickle
-import sys
-import typing as t
-from copy import copy
+from collections import namedtuple
 
 import numpy as np
 import pandas as pd
-import xlrd
+import unyt
 
-#### Constants ####
-_module_path = os.path.dirname(__file__)
+from . import units
 
-default_shapes_version = "v15.0"
-shapes_databases = {
-    "v15.0": {
-        "name": "aisc-shapes-database-v15.0",
-        "file": os.path.join(_module_path, "aisc-shapes-database-v15.0.xlsx"),
-        "pickle": os.path.join(_module_path, "aisc-shapes-database-v15.0.p"),
-        "read_excel": {
-            "sheet_name": "Database v15.0",
-            "true_values": ['T'],
-            "false_values": ['F'],
-            "na_values": ['–'],
-
-        }
-    }
-}
+#==============================================================================#
+#==[ Constants ]===============================================================#
+#==============================================================================#
+_MODULE_PATH = os.path.dirname(__file__)
+TRUE_VALUES = ['T']
+FALSE_VALUES = ['F']
+NA_VALUES = ['–']
 
 
-#### Classes ####
-class Error(Exception):
+class SteelError(Exception):
     """Steel design errors."""
     pass
 
 
-# class ShapesDatabase():
-#     """An AISC shapes database."""
-
-#     def __init__(self, name, file, sheet):
-#         """Initialize a database.
-        
-#         Parameters
-#         ----------
-#         name:
-#             String identifier for the database.
-#         file:
-#             Database file.
-#         sheet:
-#             Sheet name where the actual database is kept in the file.
-#         """
-#         if not os.path.isfile(file):
-#             raise Error("File not found: {}".format(file))
-
-#         self.name = name
-#         self._shapes_table = _read_shapes_file(file, sheet)
-
-
-class Units(enum.Enum):
-    """System of units.
-    
-    Values
-    ------
-    US:
-        Customary US units (kip, in., sec)
-    SI:
-        International System of units (kg, m, sec)
-    """
-    US = "US"
-    SI = "SI"
-
-
+#==============================================================================#
+#==[ Materials ]===============================================================#
+#==============================================================================#
+@dataclasses.dataclass
 class SteelMaterial():
     """A steel material.
-    
-    Properties
+
+    Parameters
     ----------
-    name:
-        Name used to refer to the material
-    E:
-        Elastic modulus, ksi (MPa)
-    Fy:
-        Yield stress, ksi (MPa)
-    Fu:
-        Tensile strength, ksi (MPa)
-    Ry:
-        Expected yield stress factor, dimensionless
-    Rt:
-        Expected tensile strength factor, dimensionless
-    eFy:
-        Expected yield stress, ksi (MPa) -- calculated from Fy and Ry
-    eFu:
-        Expected tensile strength, ksi (MPa) -- calculated from Fu and Rt
-    units:
-        steeldesign.Units to use for the material properties
+    name : str
+        Name of the material.
+    E : float, unyt.unyt_array
+        Elastic modulus. If units are not specified, assumed to be psi.
+    Fy : float, unyt.unyt_array
+        Yield strength. If units are not specified, assumed to be psi.
+    Fu : float, unyt.unyt_array
+        Tensile strength. If units are not specified, assumed to be psi.
+    Ry : float
+        Expected yield strength factor. Dimensionless.
+    Rt : float
+        Expected tensile strength factor. Dimensionless.
     """
+    name: str
+    E: float
+    Fy: float
+    Fu: float
+    Ry: float
+    Rt: float
 
-    def __init__(self, name, Fy, Fu, Ry, Rt, E=None, units=Units.US):
-        if E is None:
-            if units is Units.US:
-                E = 29000.0
-            elif units is Units.SI:
-                E = 200000.0
-            else:
-                raise Error("Unsupported units: {}".format(units))
+    def __post_init__(self):
+        self.E = units.process_unit_input(self.E, default_units='psi')
+        self.Fy = units.process_unit_input(self.Fy, default_units='psi')
+        self.Fu = units.process_unit_input(self.Fu, default_units='psi')
+        self.Ry = units.process_unit_input(self.Ry, default_units='dimensionless', convert=True)
+        self.Rt = units.process_unit_input(self.Rt, default_units='dimensionless', convert=True)
+        if self.Fy > self.Fu:
+            raise SteelError("SteelMaterial: yield strength must be less than tensile strength")
 
-        if Fy > Fu:
-            raise Error("Yield stress must be less than tensile strength")
+    @property
+    def eFy(self):
+        return self.Fy*self.Ry
 
-        self.name = name
-        self.E = E
-        self.Fy = Fy
-        self.Fu = Fu
-        self.Ry = Ry
-        self.Rt = Rt
-        self.eFy = Fy*Ry
-        self.eFu = Fu*Rt
+    @property
+    def eFu(self):
+        return self.Fu*self.Rt
+
+
+# yapf: disable
+MATERIALS = {
+    'A992Fy50':      SteelMaterial('A992 (50 ksi)',       E=(29e6, 'psi'), Fy=(50e3, 'psi'), Fu=(65e3, 'psi'), Ry=1.1, Rt=1.1),
+    'A500GrB':       SteelMaterial('A500 Gr. B',          E=(29e6, 'psi'), Fy=(46e3, 'psi'), Fu=(58e3, 'psi'), Ry=1.4, Rt=1.3),
+    'A500GrC':       SteelMaterial('A500 Gr. C',          E=(29e6, 'psi'), Fy=(50e3, 'psi'), Fu=(65e3, 'psi'), Ry=1.3, Rt=1.2),
+    'A572Gr42Plate': SteelMaterial('A572 Gr. 42 (plate)', E=(29e6, 'psi'), Fy=(42e3, 'psi'), Fu=(60e3, 'psi'), Ry=1.3, Rt=1.0),
+    'A572Gr50Plate': SteelMaterial('A572 Gr. 50 (plate)', E=(29e6, 'psi'), Fy=(50e3, 'psi'), Fu=(65e3, 'psi'), Ry=1.1, Rt=1.2),
+    'A572Gr55Plate': SteelMaterial('A572 Gr. 55 (plate)', E=(29e6, 'psi'), Fy=(55e3, 'psi'), Fu=(70e3, 'psi'), Ry=1.1, Rt=1.2),
+}
+# yapf: enable
+
+
+#==============================================================================#
+#==[ Shapes table ]============================================================#
+#==============================================================================#
+class ShapesTable():
+    def __init__(self, data, units):
+        """
+        Parameters
+        ----------
+        data : pd.DataFrame
+            Base data for the table.
+        units : dict
+            Units for each (numeric) column in `data`.
+        """
+        self.data = data
         self.units = units
 
-    def __call__(self, units=None):
-        if units is None:
-            units = self.units
+    def get_prop(self, shape, prop):
+        """Return a property from the table with units.
 
-        if units is not self.units:
-            Fy = convert_stress(self.Fy, self.units, units)
-            Fu = convert_stress(self.Fu, self.units, units)
+        If a property is not defined for the given shape, nan is returned.
 
-            new_obj = SteelMaterial(self.name, Fy, Fu, self.Ry, self.Rt, units=units)
-        else:
-            new_obj = copy(self)
+        Parameters
+        ----------
+        shape : str
+            Name of the shape to look up.
+        prop : str
+            Name of the property to look up.
 
-        return new_obj
+        Returns
+        -------
+        q : unyt.unyt_quantity
+            Value of the property with units.
+
+        Raises
+        ------
+        KeyError
+            If `shape` is not found in the table; if `prop` is not found in the
+            table; if `prop` is not found in the units dict.
+        """
+        return unyt.unyt_quantity(self.data.loc[shape][prop], self.units[prop])
+
+    def lightest_shape(self, shape_list):
+        """Return the lightest shape (force/length) from the given list.
+
+        Works across different shape series, e.g. comparing an HSS and W works
+        fine. If two or more shapes have the same lightest weight, a shape is
+        returned, but which is one is undefined.
+
+        Parameters
+        ----------
+        shape_list : list
+            List of shapes to check.
+
+        Examples
+        --------
+        >>> lightest_shape(['W14X82', 'W44X335'])
+        'W14X82'
+        >>> lightest_shape(['W14X82', 'HSS4X4X1/2'])
+        'HSS4X4X1/2'
+        """
+        return self.data.loc[shape_list].W.idxmin()
+
+    @classmethod
+    def from_file(
+        cls, file, units, true_values=TRUE_VALUES, false_values=FALSE_VALUES, na_values=NA_VALUES
+    ):
+        """Load a shapes table from a file.
+
+        Parameters
+        ----------
+        file : str
+            Name of the file to load.
+        units : dict
+            Dictionary of units, with keys corresponding to the column names.
+        true_values : list, optional
+            List of values to convert to ``True``. (default: ['T'])
+        false_values : list, optional
+            List of values to convert to ``False``. (default: ['F'])
+        na_values : list, optional
+            List of values to convert to ``nan``. (default: ['–'])
+        """
+        data = pd.read_csv(
+            file, true_values=true_values, false_values=false_values, na_values=na_values
+        ).set_index('AISC_Manual_Label')
+
+        # Convert fractions to floats
+        def str2frac2float(s):
+            return float(sum(fractions.Fraction(i) for i in s.split()))
+
+        for column in data.columns[data.dtypes == object]:
+            if column != 'Type':
+                data[column].update(data[column][data[column].notnull()].apply(str2frac2float))
+                data[column] = pd.to_numeric(data[column])
+
+        return cls(data, units)
 
 
-class materials():
-    A992Fy50 = SteelMaterial("A992", 50, 65, 1.1, 1.1)
-    A500GrC = SteelMaterial("A500 Gr. C", 50, 65, 1.3, 1.2)
+_SHAPES_US_FILE = os.path.join(_MODULE_PATH, 'aisc-shapes-database-v15-0-US.csv.bz2')
+_SHAPES_US_UNITS = {
+    'W': 'lbf/ft',
+    'A': 'inch**2',
+    'd': 'inch',
+    'ddet': 'inch',
+    'Ht': 'inch',
+    'h': 'inch',
+    'OD': 'inch',
+    'bf': 'inch',
+    'bfdet': 'inch',
+    'B': 'inch',
+    'b': 'inch',
+    'ID': 'inch',
+    'tw': 'inch',
+    'twdet': 'inch',
+    'twdet/2': 'inch',
+    'tf': 'inch',
+    'tfdet': 'inch',
+    't': 'inch',
+    'tnom': 'inch',
+    'tdes': 'inch',
+    'kdes': 'inch',
+    'kdet': 'inch',
+    'k1': 'inch',
+    'x': 'inch',
+    'y': 'inch',
+    'eo': 'inch',
+    'xp': 'inch',
+    'yp': 'inch',
+    'bf/2tf': 'dimensionless',
+    'b/t': 'dimensionless',
+    'b/tdes': 'dimensionless',
+    'h/tw': 'dimensionless',
+    'h/tdes': 'dimensionless',
+    'D/t': 'dimensionless',
+    'Ix': 'inch**4',
+    'Zx': 'inch**3',
+    'Sx': 'inch**3',
+    'rx': 'inch',
+    'Iy': 'inch**4',
+    'Zy': 'inch**3',
+    'Sy': 'inch**3',
+    'ry': 'inch',
+    'Iz': 'inch**4',
+    'rz': 'inch',
+    'Sz': 'inch**3',
+    'J': 'inch**4',
+    'Cw': 'inch**6',
+    'C': 'inch**3',
+    'Wno': 'inch**2',
+    'Sw1': 'inch**4',
+    'Sw2': 'inch**4',
+    'Sw3': 'inch**4',
+    'Qf': 'inch**3',
+    'Qw': 'inch**3',
+    'ro': 'inch',
+    'H': 'dimensionless',
+    'tan(α)': 'dimensionless',
+    'Iw': 'inch**4',
+    'zA': 'inch',
+    'zB': 'inch',
+    'zC': 'inch',
+    'wA': 'inch',
+    'wB': 'inch',
+    'wC': 'inch',
+    'SzA': 'inch**3',
+    'SzB': 'inch**3',
+    'SzC': 'inch**3',
+    'SwA': 'inch**3',
+    'SwB': 'inch**3',
+    'SwC': 'inch**3',
+    'rts': 'inch',
+    'ho': 'inch',
+    'PA': 'inch',
+    'PA2': 'inch',
+    'PB': 'inch',
+    'PC': 'inch',
+    'PD': 'inch',
+    'T': 'inch',
+    'WGi': 'inch',
+    'WGo': 'inch',
+}
 
+_SHAPES_SI_FILE = os.path.join(_MODULE_PATH, 'aisc-shapes-database-v15-0-SI.csv.bz2')
+_SHAPES_SI_UNITS = {
+    'W': 'kg/m',
+    'A': 'mm**2',
+    'd': 'mm',
+    'ddet': 'mm',
+    'Ht': 'mm',
+    'h': 'mm',
+    'OD': 'mm',
+    'bf': 'mm',
+    'bfdet': 'mm',
+    'B': 'mm',
+    'b': 'mm',
+    'ID': 'mm',
+    'tw': 'mm',
+    'twdet': 'mm',
+    'twdet/2': 'mm',
+    'tf': 'mm',
+    'tfdet': 'mm',
+    't': 'mm',
+    'tnom': 'mm',
+    'tdes': 'mm',
+    'kdes': 'mm',
+    'kdet': 'mm',
+    'k1': 'mm',
+    'x': 'mm',
+    'y': 'mm',
+    'eo': 'mm',
+    'xp': 'mm',
+    'yp': 'mm',
+    'bf/2tf': 'dimensionless',
+    'b/t': 'dimensionless',
+    'b/tdes': 'dimensionless',
+    'h/tw': 'dimensionless',
+    'h/tdes': 'dimensionless',
+    'D/t': 'dimensionless',
+    'Ix': '1e6*mm**4',
+    'Zx': '1e3*mm**3',
+    'Sx': '1e3*mm**3',
+    'rx': 'mm',
+    'Iy': '1e6*mm**4',
+    'Zy': '1e3*mm**3',
+    'Sy': '1e3*mm**3',
+    'ry': 'mm',
+    'Iz': '1e6*mm**4',
+    'rz': 'mm',
+    'Sz': '1e3*mm**3',
+    'J': '1e3*mm**4',
+    'Cw': '1e9*mm**6',
+    'C': '1e3*mm**3',
+    'Wno': 'mm**2',
+    'Sw1': '1e6*mm**4',
+    'Sw2': '1e6*mm**4',
+    'Sw3': '1e6*mm**4',
+    'Qf': '1e3*mm**3',
+    'Qw': '1e3*mm**3',
+    'ro': 'mm',
+    'H': 'dimensionless',
+    'tan(α)': 'dimensionless',
+    'Iw': '1e6*mm**4',
+    'zA': 'mm',
+    'zB': 'mm',
+    'zC': 'mm',
+    'wA': 'mm',
+    'wB': 'mm',
+    'wC': 'mm',
+    'SzA': '1e3*mm**3',
+    'SzB': '1e3*mm**3',
+    'SzC': '1e3*mm**3',
+    'SwA': '1e3*mm**3',
+    'SwB': '1e3*mm**3',
+    'SwC': '1e3*mm**3',
+    'rts': 'mm',
+    'ho': 'mm',
+    'PA': 'mm',
+    'PA2': 'mm',
+    'PB': 'mm',
+    'PC': 'mm',
+    'PD': 'mm',
+    'T': 'mm',
+    'WGi': 'mm',
+    'WGo': 'mm',
+}
 
-####################################### Functions #######################################
-def set_shapes_version(version) -> bool:
-    """Select the version of the AISC shapes table to use."""
-    global shapes
-    success = False
-
-    try:
-        shapes_db = shapes_databases[version]
-        shapes_file = shapes_db["file"]
-        shapes_pickle = shapes_db["pickle"]
-        if not os.path.exists(shapes_pickle):
-            logger.info("Creating pickle file for version {}".format(version))
-            generate_shapes_pickle(shapes_db)
-
-        if os.path.getmtime(shapes_file) > os.path.getmtime(shapes_pickle):
-            logger.info("Regenerating pickle file for version {}".format(version))
-            generate_shapes_pickle(shapes_db)
-
-        shapes = load_shapes_pickle(shapes_pickle)
-        success = True
-    except KeyError:
-        logger.error("Unsupported shapes database version: {}".format(version))
-    finally:
-        return success
-
-
-def generate_shapes_pickle(shapes_db):
-    """Create or update the pickle file for a database."""
-    table = _read_shapes_file(shapes_db)
-    with open(shapes_db['pickle'], 'wb') as the_file:
-        pickle.dump(table, the_file)
-
-
-def load_shapes_pickle(shapes_pickle) -> pd.DataFrame:
-    """Load a pickled shapes file."""
-    with open(shapes_pickle, 'rb') as the_file:
-        return pickle.load(the_file)
-
-
-def _read_shapes_file(shapes_db):
-    try:
-        shapes = pd.read_excel(shapes_db['file'], **shapes_db['read_excel'])
-    except (FileNotFoundError, xlrd.XLRDError) as err:
-        logger.error(err)
-        raise err
-
-    return shapes
+shapes_US = ShapesTable.from_file(_SHAPES_US_FILE, _SHAPES_US_UNITS)
+shapes_SI = ShapesTable.from_file(_SHAPES_SI_FILE, _SHAPES_SI_UNITS)
 
 
 def property_lookup(shape, prop):
-    prop_list = shapes[prop]
-    prop_frame = prop_list.loc[shapes.AISC_Manual_Label == shape]
-    prop = prop_frame.iloc[0]
-    return prop
+    """Retrieve a property from the US shapes table.
+
+    Returns values without units for legacy reasons.
+
+    Parameters
+    ----------
+    shape : str
+        Name of the shape to look up.
+    prop : str
+        Name of the property to look up.
+    """
+    return shapes_US.data.loc[shape][prop]
 
 
-def convert_stress(value, from_units, to_units):
-    """Convert a stress quantity (ksi <--> MPa)."""
-    if from_units not in Units:
-        raise Error("Unsupported units: {}".format(from_units))
-    if to_units not in Units:
-        raise Error("Unsupported units: {}".format(to_units))
+def lightest_shape(shape_list):
+    """Return the lightest shape (force/length) from the given list.
 
-    if from_units == to_units:
-        return value
+    Works across different shape series, e.g. comparing an HSS and W works fine.
+    If two or more shapes have the same lightest weight, a shape is returned,
+    but which is one is undefined.
 
-    if from_units == Units.US:
-        return value*6.89475908677537
-    elif from_units == Units.SI:
-        return value/6.89475908677537
+    Parameters
+    ----------
+    shape_list : list
+        List of shapes to check.
+
+    Examples
+    --------
+    >>> lightest_shape(['W14X82', 'W44X335'])
+    'W14X82'
+    >>> lightest_shape(['W14X82', 'HSS4X4X1/2'])
+    'HSS4X4X1/2'
+    """
+    return shapes_US.lightest_shape(shape_list)
 
 
+#==============================================================================#
+#==[ Design ]==================================================================#
+#==============================================================================#
 class MemberType(enum.Enum):
-    BRACE = "BRACE"
-    BEAM = "BEAM"
-    COLUMN = "COLUMN"
+    BRACE = 'BRACE'
+    BEAM = 'BEAM'
+    COLUMN = 'COLUMN'
 
 
 class Ductility(enum.Enum):
-    HIGH = "HIGH"
-    MODERATE = "MODERATE"
+    HIGH = 'HIGH'
+    MODERATE = 'MODERATE'
 
 
 def check_seismic_wtr_wide_flange(
-    shape, mem_type: MemberType, level: Ductility, Ca, material=materials.A992Fy50
+    shape, mem_type: MemberType, level: Ductility, Ca, material=MATERIALS['A992Fy50']
 ) -> (bool, float, float, float, float):
-    """Check the width-to-thickness ratio of a seismic element for the given ductility.
+    """Check the width-to-thickness ratio of a W shape for the given ductility.
 
     Parameters
     ----------
@@ -263,7 +442,7 @@ def check_seismic_wtr_wide_flange(
     ht = property_lookup(shape, 'h/tw')
     bt = property_lookup(shape, 'bf/2tf')
 
-    common_root = np.sqrt(material.E/material.eFy)
+    common_root = np.sqrt(material.E/material.eFy).to_value('dimensionless')
 
     if mem_type == MemberType.BRACE:
         ht_max = 1.57*common_root
@@ -282,71 +461,9 @@ def check_seismic_wtr_wide_flange(
             else:
                 ht_max = max(0.88*common_root*(2.68 - Ca), 1.57*common_root)
         else:
-            raise Error("Unsupported ductility level: {}".format(level))
+            raise SteelError("Unsupported ductility level: {}".format(level))
     else:
-        raise Error("Unsupported member type: {}".format(mem_type))
+        raise SteelError("Unsupported member type: {}".format(mem_type))
 
-    return (ht <= ht_max and bt <= bt_max, ht, ht_max, bt, bt_max)
-
-
-def lightest_shape(shape_list: t.List[str]):
-    """Return the lightest shape (force/length) from the given list.
-    
-    Works across different shape series, e.g. comparing an HSS and W works fine. If two or
-    more shapes have the same lightest weight, a shape is returned, but which is one is
-    undefined.
-
-    >>> lightest_shape(['W14X84', 'W44X335'])
-    'W14X84'
-    >>> lightest_shape(['W14X84', 'HSS4X4X1/2'])
-    'HSS4X4X1/2'
-    """
-    
-    return shapes.AISC_Manual_Label[shapes.W[shapes.AISC_Manual_Label.isin(shape_list)].idxmin()]
-
-
-def latex_name(shape):
-    """Return LaTeX code for nicely typesetting a steel section name.
-    
-    Assumes the "by" part of the section is represented by an 'X', and that
-    compound fractions are separated by '-' (hyphen, not endash). Output requires
-    the LaTeX package ``nicefrac`` or its superpackage, ``units``.
-
-    Only tested on W and HSS names so far.
-
-    Parameters
-    ----------
-    shape:
-        Name of a steel section.
-
-    Example
-    -------
-    >>> name = 'HSS3-1/2X3-1/2X3/16'
-    >>> latex_name(name)
-    'HSS3-\\nicefrac{1}{2}$\\times$3-\\nicefrac{1}{2}$\\times$\\nicefrac{3}{16}'
-    """
-
-    def frac_to_nicefrac(frac):
-        """Return LaTeX code for a nicefrac from a fraction like '3/16'. No compound fractions!"""
-        (numer, denom) = frac.split('/')
-        return f"\\nicefrac{{{numer}}}{{{denom}}}"
-
-    shape_parts = shape.split('X')
-    for [index, part] in enumerate(shape_parts):
-        if '/' in part and '-' in part: # need to activate compound fraction logic
-            (front, frac) = part.split('-')
-            newfrac = frac_to_nicefrac(frac)
-            shape_parts[index] = front + '-' + newfrac
-        elif '/' in part: # need to activate fraction logic
-            shape_parts[index] = frac_to_nicefrac(part)
-            
-    return '$\\times$'.join(shape_parts)
-
-
-#### Initialization ####
-logging.basicConfig()
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-successful = set_shapes_version(default_shapes_version)
-if not successful:
-    raise Error("Could not set default steel shapes table. See log for details.")
+    WtrResults = namedtuple('WtrResults', ['passed', 'ht', 'ht_max', 'bt', 'bt_max'])
+    return WtrResults(ht <= ht_max and bt <= bt_max, ht, ht_max, bt, bt_max)

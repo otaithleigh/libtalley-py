@@ -8,8 +8,8 @@ setup(
     ],
     package_data={
         'libtalley': [
-            'aisc-shapes-database-v15.0.xlsx',
-            'aisc-shapes-database-v15.0.p',
+            'aisc-shapes-database-v15-0-SI.csv.bz2',
+            'aisc-shapes-database-v15-0-US.csv.bz2',
         ]
     },
     install_requires=[
