@@ -57,8 +57,8 @@ class SteelMaterial():
         self.E = units.process_unit_input(self.E, default_units='psi')
         self.Fy = units.process_unit_input(self.Fy, default_units='psi')
         self.Fu = units.process_unit_input(self.Fu, default_units='psi')
-        self.Ry = units.process_unit_input(self.Ry, default_units='dimensionless', convert=True)
-        self.Rt = units.process_unit_input(self.Rt, default_units='dimensionless', convert=True)
+        self.Ry = units.process_unit_input(self.Ry, default_units='dimensionless', convert=True).v
+        self.Rt = units.process_unit_input(self.Rt, default_units='dimensionless', convert=True).v
         if self.Fy > self.Fu:
             raise SteelError("SteelMaterial: yield strength must be less than tensile strength")
 
@@ -70,17 +70,21 @@ class SteelMaterial():
     def eFu(self):
         return self.Fu*self.Rt
 
+    @classmethod
+    def from_name(cls, name, application=None):
+        if application is None:
+            material = MATERIALS.loc[name]
+        else:
+            material = MATERIALS[MATERIALS.application == application].loc[name]
+        # Multiple matching materials will be returned as a DataFrame; a single
+        # material will be a Series
+        if isinstance(material, pd.DataFrame):
+            raise SteelError('multiple materials found: specify application to narrow search')
+        return cls(name, material.E, material.Fy, material.Fu, material.Ry, material.Rt)
 
-# yapf: disable
-MATERIALS = {
-    'A992Fy50':      SteelMaterial('A992 (50 ksi)',       E=(29e6, 'psi'), Fy=(50e3, 'psi'), Fu=(65e3, 'psi'), Ry=1.1, Rt=1.1),
-    'A500GrB':       SteelMaterial('A500 Gr. B',          E=(29e6, 'psi'), Fy=(46e3, 'psi'), Fu=(58e3, 'psi'), Ry=1.4, Rt=1.3),
-    'A500GrC':       SteelMaterial('A500 Gr. C',          E=(29e6, 'psi'), Fy=(50e3, 'psi'), Fu=(65e3, 'psi'), Ry=1.3, Rt=1.2),
-    'A572Gr42Plate': SteelMaterial('A572 Gr. 42 (plate)', E=(29e6, 'psi'), Fy=(42e3, 'psi'), Fu=(60e3, 'psi'), Ry=1.3, Rt=1.0),
-    'A572Gr50Plate': SteelMaterial('A572 Gr. 50 (plate)', E=(29e6, 'psi'), Fy=(50e3, 'psi'), Fu=(65e3, 'psi'), Ry=1.1, Rt=1.2),
-    'A572Gr55Plate': SteelMaterial('A572 Gr. 55 (plate)', E=(29e6, 'psi'), Fy=(55e3, 'psi'), Fu=(70e3, 'psi'), Ry=1.1, Rt=1.2),
-}
-# yapf: enable
+
+_MATERIALS_FILE = os.path.join(_MODULE_PATH, 'steel-materials.csv')
+MATERIALS = pd.read_csv(_MATERIALS_FILE).set_index('name')
 
 
 #==============================================================================#
@@ -471,14 +475,14 @@ def check_seismic_wtr_wide_flange(
 
 def brace_capacity(shape, length, material):
     ry = shapes_US.get_prop(shape, 'ry')
-    Fe = np.pi**2 * material.E / length / ry
-    RyFy_Fe = material.Ry*material.Fy / Fe
+    Fe = np.pi**2*material.E/length/ry
+    RyFy_Fe = material.Ry*material.Fy/Fe
 
     if RyFy_Fe <= 2.25:
-        Fcre = 0.658**RyFy_Fe * material.Ry*material.Fy
+        Fcre = 0.658**RyFy_Fe*material.Ry*material.Fy
     else:
         Fcre = 0.877*Fe
-    
+
     Ag = shapes_US.get_prop(shape, 'A')
     tension = material.Ry*material.Fy*Ag
     compression = min(tension, 1/0.877*Fcre*Ag)
