@@ -1,7 +1,7 @@
 from setuptools import setup
 setup(
     name="libtalley",
-    version="0.6.0",
+    version="0.6.1",
     packages=[
         'libtalley',
         'libtalley.asce7_16',
@@ -10,6 +10,7 @@ setup(
         'libtalley': [
             'aisc-shapes-database-v15-0-SI.csv.bz2',
             'aisc-shapes-database-v15-0-US.csv.bz2',
+            'steel-materials.csv',
         ]
     },
     install_requires=[
