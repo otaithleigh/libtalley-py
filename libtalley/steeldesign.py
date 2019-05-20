@@ -477,7 +477,7 @@ def check_seismic_wtr_wide_flange(shape, mem_type: MemberType, level: Ductility,
 
 def brace_capacity(shape, length, material):
     ry = shapes_US.get_prop(shape, 'ry')
-    Fe = np.pi**2*material.E/length/ry
+    Fe = np.pi**2*material.E/(length/ry)**2
     RyFy_Fe = material.Ry*material.Fy/Fe
 
     if RyFy_Fe <= 2.25:
