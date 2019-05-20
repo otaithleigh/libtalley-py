@@ -467,3 +467,22 @@ def check_seismic_wtr_wide_flange(
 
     WtrResults = namedtuple('WtrResults', ['passed', 'ht', 'ht_max', 'bt', 'bt_max'])
     return WtrResults(ht <= ht_max and bt <= bt_max, ht, ht_max, bt, bt_max)
+
+
+def brace_capacity(shape, length, material):
+    ry = shapes_US.get_prop(shape, 'ry')
+    Fe = np.pi**2 * material.E / length / ry
+    RyFy_Fe = material.Ry*material.Fy / Fe
+
+    if RyFy_Fe <= 2.25:
+        Fcre = 0.658**RyFy_Fe * material.Ry*material.Fy
+    else:
+        Fcre = 0.877*Fe
+    
+    Ag = shapes_US.get_prop(shape, 'A')
+    tension = material.Ry*material.Fy*Ag
+    compression = min(tension, 1/0.877*Fcre*Ag)
+    postbuckling = 0.3*compression
+
+    Capacity = namedtuple('Capacity', ['tension', 'compression', 'postbuckling'])
+    return Capacity(tension, compression, postbuckling)
