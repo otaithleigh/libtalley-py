@@ -407,9 +407,8 @@ class Ductility(enum.Enum):
     MODERATE = 'MODERATE'
 
 
-def check_seismic_wtr_wide_flange(
-    shape, mem_type: MemberType, level: Ductility, Ca, material=MATERIALS['A992Fy50']
-) -> (bool, float, float, float, float):
+def check_seismic_wtr_wide_flange(shape, mem_type: MemberType, level: Ductility, Ca,
+                                  material=None) -> (bool, float, float, float, float):
     """Check the width-to-thickness ratio of a W shape for the given ductility.
 
     Parameters
@@ -443,6 +442,9 @@ def check_seismic_wtr_wide_flange(
     ---------
     AISC 341-16, Table D1.1 (pp. 9.1-14 -- 9.1-17)
     """
+    if material is None:
+        material = SteelMaterial.from_name('A992')
+
     ht = property_lookup(shape, 'h/tw')
     bt = property_lookup(shape, 'bf/2tf')
 
