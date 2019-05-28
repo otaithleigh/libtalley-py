@@ -97,7 +97,7 @@ class ShapesTable():
         ----------
         data : pd.DataFrame
             Base data for the table.
-        units : dict
+        units : pd.Series
             Units for each (numeric) column in `data`.
         """
         self.data = data
@@ -126,7 +126,7 @@ class ShapesTable():
             If `shape` is not found in the table; if `prop` is not found in the
             table; if `prop` is not found in the units dict.
         """
-        return unyt.unyt_quantity(self.data.loc[shape][prop], self.units[prop])
+        return unyt.unyt_quantity(self.data[prop][shape], self.units[prop])
 
     def lightest_shape(self, shape_list):
         """Return the lightest shape (force/length) from the given list.
@@ -166,7 +166,8 @@ class ShapesTable():
         false_values : list, optional
             List of values to convert to ``False``. (default: ['F'])
         na_values : list, optional
-            List of values to convert to ``nan``. (default: ['–'])
+            List of values to convert to ``nan``. (default: ['–']) (note that
+            this is an en-dash U+2013, not an ASCII hyphen U+002D)
         """
         data = pd.read_csv(
             file, true_values=true_values, false_values=false_values, na_values=na_values
@@ -181,7 +182,7 @@ class ShapesTable():
                 data[column].update(data[column][data[column].notnull()].apply(str2frac2float))
                 data[column] = pd.to_numeric(data[column])
 
-        return cls(data, units)
+        return cls(data, pd.Series(units))
 
 
 _SHAPES_US_FILE = os.path.join(_MODULE_PATH, 'aisc-shapes-database-v15-0-US.csv.bz2')
