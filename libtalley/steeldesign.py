@@ -106,7 +106,9 @@ class ShapesTable():
     def get_prop(self, shape, prop):
         """Return a property from the table with units.
 
-        If a property is not defined for the given shape, nan is returned.
+        If a property is not defined for the given shape, nan is returned. If
+        units are not defined for the property, the raw quantity is returned
+        from the table.
 
         Parameters
         ----------
@@ -124,9 +126,13 @@ class ShapesTable():
         ------
         KeyError
             If `shape` is not found in the table; if `prop` is not found in the
-            table; if `prop` is not found in the units dict.
+            table.
         """
-        return unyt.unyt_quantity(self.data[prop][shape], self.units[prop])
+        units = self.units.get(prop)
+        if units is None:
+            return self.data[prop][shape]
+        else:
+            return unyt.unyt_quantity(self.data[prop][shape], units)
 
     def lightest_shape(self, shape_list):
         """Return the lightest shape (force/length) from the given list.
