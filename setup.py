@@ -18,7 +18,6 @@ setup(
         'pandas',
         'scipy >= 1.0.0',
         'tabulate',
-        'xlrd',
     ],
     python_requires=">=3.7.0",
     author="Peter Talley",
