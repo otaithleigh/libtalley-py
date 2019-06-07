@@ -1,0 +1,37 @@
+{% set version = "0.7.1" %}
+
+package:
+  name: libtalley
+  version: {{ version }}
+
+source:
+  git_url: https://github.com/otaithleigh/libtalley-py.git
+  git_tag: v{{ version }}
+
+requirements:
+  host:
+    - python
+  run:
+    - python>=3.7.0
+    - numpy>=1.15.0
+    - pandas
+    - scipy>=1.0.0
+    - tabulate
+    - conda-forge::unyt
+
+test:
+  imports:
+    - libtalley
+    - libtalley.asce7_16
+    - libtalley.asce7_16.seismic
+    - libtalley.fema_p695
+    - libtalley.latex_format
+    - libtalley.mutt
+    - libtalley.steeldesign
+    - libtalley.text
+    - libtalley.units
+
+about:
+  home: https://github.com/otaithleigh/libtalley-py
+  license: MIT
+  summary: A collection of helpful functions and doodads.

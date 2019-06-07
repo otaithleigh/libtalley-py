@@ -1,7 +1,7 @@
 from setuptools import setup
 setup(
     name="libtalley",
-    version="0.7.0",
+    version="0.7.1",
     packages=[
         'libtalley',
         'libtalley.asce7_16',
@@ -18,6 +18,7 @@ setup(
         'pandas',
         'scipy >= 1.0.0',
         'tabulate',
+        'unyt',
     ],
     python_requires=">=3.7.0",
     author="Peter Talley",
