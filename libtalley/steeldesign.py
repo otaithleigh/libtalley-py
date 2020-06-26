@@ -10,9 +10,9 @@ import unyt
 
 from . import units
 
-#==============================================================================#
-#==[ Constants ]===============================================================#
-#==============================================================================#
+#===============================================================================
+# Constants
+#===============================================================================
 _MODULE_PATH = os.path.dirname(__file__)
 TRUE_VALUES = ['T']
 FALSE_VALUES = ['F']
@@ -24,9 +24,9 @@ class SteelError(Exception):
     pass
 
 
-#==============================================================================#
-#==[ Materials ]===============================================================#
-#==============================================================================#
+#===============================================================================
+# Materials
+#===============================================================================
 @dataclasses.dataclass
 class SteelMaterial():
     """A steel material.
@@ -57,10 +57,15 @@ class SteelMaterial():
         self.E = units.process_unit_input(self.E, default_units='psi')
         self.Fy = units.process_unit_input(self.Fy, default_units='psi')
         self.Fu = units.process_unit_input(self.Fu, default_units='psi')
-        self.Ry = units.process_unit_input(self.Ry, default_units='dimensionless', convert=True).v
-        self.Rt = units.process_unit_input(self.Rt, default_units='dimensionless', convert=True).v
+        self.Ry = units.process_unit_input(self.Ry,
+                                           default_units='dimensionless',
+                                           convert=True).v
+        self.Rt = units.process_unit_input(self.Rt,
+                                           default_units='dimensionless',
+                                           convert=True).v
         if self.Fy > self.Fu:
-            raise SteelError("SteelMaterial: yield strength must be less than tensile strength")
+            raise SteelError('SteelMaterial: yield strength must'
+                             ' be less than tensile strength')
 
     @property
     def eFy(self):
@@ -79,8 +84,10 @@ class SteelMaterial():
         # Multiple matching materials will be returned as a DataFrame; a single
         # material will be a Series
         if isinstance(material, pd.DataFrame):
-            raise SteelError('multiple materials found: specify application to narrow search')
-        return cls(name, material.E, material.Fy, material.Fu, material.Ry, material.Rt)
+            raise SteelError('multiple materials found: specify'
+                             ' application to narrow search')
+        return cls(name, material.E, material.Fy, material.Fu, material.Ry,
+                   material.Rt)
 
 
 _MATERIALS_FILE = os.path.join(_MODULE_PATH, 'steel-materials.csv')
@@ -156,9 +163,12 @@ class ShapesTable():
         return self.data.loc[shape_list].W.idxmin()
 
     @classmethod
-    def from_file(
-        cls, file, units, true_values=TRUE_VALUES, false_values=FALSE_VALUES, na_values=NA_VALUES
-    ):
+    def from_file(cls,
+                  file,
+                  units,
+                  true_values=TRUE_VALUES,
+                  false_values=FALSE_VALUES,
+                  na_values=NA_VALUES):
         """Load a shapes table from a file.
 
         Parameters
@@ -175,9 +185,10 @@ class ShapesTable():
             List of values to convert to ``nan``. (default: ['–']) (note that
             this is an en-dash U+2013, not an ASCII hyphen U+002D)
         """
-        data = pd.read_csv(
-            file, true_values=true_values, false_values=false_values, na_values=na_values
-        ).set_index('AISC_Manual_Label')
+        data = pd.read_csv(file,
+                           true_values=true_values,
+                           false_values=false_values,
+                           na_values=na_values).set_index('AISC_Manual_Label')
 
         # Convert fractions to floats
         def str2frac2float(s):
@@ -185,13 +196,16 @@ class ShapesTable():
 
         for column in data.columns[data.dtypes == object]:
             if column != 'Type':
-                data[column].update(data[column][data[column].notnull()].apply(str2frac2float))
+                notnull_data = data[column][data[column].notnull()]
+                converted_data = notnull_data.apply(str2frac2float)
+                data[column].update(converted_data)
                 data[column] = pd.to_numeric(data[column])
 
         return cls(data, pd.Series(units))
 
 
-_SHAPES_US_FILE = os.path.join(_MODULE_PATH, 'aisc-shapes-database-v15-0-US.csv.bz2')
+_SHAPES_US_FILE = os.path.join(_MODULE_PATH,
+                               'aisc-shapes-database-v15-0-US.csv.bz2')
 _SHAPES_US_UNITS = {
     'W': 'lbf/ft',
     'A': 'inch**2',
@@ -275,7 +289,8 @@ _SHAPES_US_UNITS = {
     'WGo': 'inch',
 }
 
-_SHAPES_SI_FILE = os.path.join(_MODULE_PATH, 'aisc-shapes-database-v15-0-SI.csv.bz2')
+_SHAPES_SI_FILE = os.path.join(_MODULE_PATH,
+                               'aisc-shapes-database-v15-0-SI.csv.bz2')
 _SHAPES_SI_UNITS = {
     'W': 'kg/m',
     'A': 'mm**2',
@@ -414,8 +429,12 @@ class Ductility(enum.Enum):
     MODERATE = 'MODERATE'
 
 
-def check_seismic_wtr_wide_flange(shape, mem_type: MemberType, level: Ductility, Ca,
-                                  material=None) -> (bool, float, float, float, float):
+def check_seismic_wtr_wide_flange(shape,
+                                  mem_type: MemberType,
+                                  level: Ductility,
+                                  Ca,
+                                  material=None
+                                  ) -> (bool, float, float, float, float):
     """Check the width-to-thickness ratio of a W shape for the given ductility.
 
     Parameters
@@ -478,7 +497,8 @@ def check_seismic_wtr_wide_flange(shape, mem_type: MemberType, level: Ductility,
     else:
         raise SteelError("Unsupported member type: {}".format(mem_type))
 
-    WtrResults = namedtuple('WtrResults', ['passed', 'ht', 'ht_max', 'bt', 'bt_max'])
+    WtrResults = namedtuple('WtrResults',
+                            ['passed', 'ht', 'ht_max', 'bt', 'bt_max'])
     return WtrResults(ht <= ht_max and bt <= bt_max, ht, ht_max, bt, bt_max)
 
 
@@ -497,5 +517,6 @@ def brace_capacity(shape, length, material):
     compression = min(tension, 1/0.877*Fcre*Ag)
     postbuckling = 0.3*compression
 
-    Capacity = namedtuple('Capacity', ['tension', 'compression', 'postbuckling'])
+    Capacity = namedtuple('Capacity',
+                          ['tension', 'compression', 'postbuckling'])
     return Capacity(tension, compression, postbuckling)

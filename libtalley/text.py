@@ -15,8 +15,14 @@ class Boxer():
         <left><lpad><------- text -------><rpad><right>
         <left><------------- rule -------------><final>
     """
-
-    def __init__(self, left, right, rule, pad=' ', first=None, final=None, rpad=None):
+    def __init__(self,
+                 left,
+                 right,
+                 rule,
+                 pad=' ',
+                 first=None,
+                 final=None,
+                 rpad=None):
         """Create a new Boxer.
 
         Parameters
@@ -57,7 +63,8 @@ class Boxer():
             Total box width to calculate from.
         """
         # textwidth is from the box size, minus the two ends, minus two pads
-        return width - len(self.left) - len(self.right) - len(self.lpad) - len(self.rpad)
+        return (width - len(self.left) - len(self.right) - len(self.lpad) -
+                len(self.rpad))
 
     def box(self, text, width=80, wrap=True):
         """Box some text, returned as a joined string.
@@ -69,9 +76,9 @@ class Boxer():
         width : int, optional
             Total width of the box. (default: 80)
         wrap : bool, optional
-            If True, wrap long lines in `text`. If False, warnings will be issued
-            for long lines but they will be left as-is, creating a spiky box.
-            (default: True)
+            If True, wrap long lines in `text`. If False, warnings will be
+            issued for long lines but they will be left as-is, creating a spiky
+            box. (default: True)
         """
         return '\n'.join(self.boxsplit(text, width, wrap))
 
@@ -85,9 +92,9 @@ class Boxer():
         width : int, optional
             Total width of the box. (default: 80)
         wrap : bool, optional
-            If True, wrap long lines in `text`. If False, warnings will be issued
-            for long lines but they will be left as-is, creating a spiky box.
-            (default: True)
+            If True, wrap long lines in `text`. If False, warnings will be
+            issued for long lines but they will be left as-is, creating a spiky
+            box. (default: True)
         """
         textwidth = self.textwidth(width)
         toprulewidth = width - len(self.first) - len(self.right)
@@ -108,6 +115,7 @@ class Boxer():
             toprule = self.first + self.rule*toprulewidth + self.right
             bottomrule = self.left + self.rule*bottomrulewidth + self.final
         else:
+            # yapf: disable
             toprule = (
                 self.first + self.rule*(toprulewidth // len(self.rule)) +
                 self.rule[:toprulewidth % len(self.rule)] + self.right
@@ -116,6 +124,7 @@ class Boxer():
                 self.left + self.rule*(bottomrulewidth // len(self.rule)) +
                 self.rule[:bottomrulewidth % len(self.rule)] + self.final
             )
+            # yapf: enable
 
         lines = [toprule]
         text = text.splitlines()
@@ -152,15 +161,16 @@ def cbox(text, width=80, wrap=True):
     width : int, optional
         Width of the box. (Note: not text width) (default: 80)
     wrap : bool, optional
-        If True, wrap long lines in `text`. If False, warnings will be issued for
-        long lines but they will be left as-is, creating a spiky box. (default: True)
+        If True, wrap long lines in `text`. If False, warnings will be issued
+        for long lines but they will be left as-is, creating a spiky box.
+        (default: True)
 
     Example
     -------
-    >>> print(cbox("hello world!"))
-    /******************************************************************************
-     * hello world!                                                               *
-     ******************************************************************************/
+    >>> print(cbox("hello world!", width=40))
+    /**************************************
+     * hello world!                       *
+     **************************************/
     """
     return _CBoxer.box(text, width=width, wrap=wrap)
 
@@ -169,8 +179,8 @@ def latex_name(shape):
     """Return LaTeX code for nicely typesetting a steel section name.
 
     Assumes the "by" part of the section is represented by an 'X', and that
-    compound fractions are separated by '-' (hyphen, not endash). Output requires
-    the LaTeX package ``nicefrac`` or its superpackage, ``units``.
+    compound fractions are separated by '-' (hyphen, not endash). Output
+    requires the LaTeX package ``nicefrac`` or its superpackage, ``units``.
 
     Only tested on W and HSS names so far.
 
@@ -185,9 +195,9 @@ def latex_name(shape):
     >>> latex_name(name)
     'HSS3-\\nicefrac{1}{2}$\\times$3-\\nicefrac{1}{2}$\\times$\\nicefrac{3}{16}'
     """
-
     def frac_to_nicefrac(frac):
-        """Return LaTeX code for a nicefrac from a fraction like '3/16'. No compound fractions!"""
+        """Return LaTeX code for a nicefrac from a fraction like '3/16'. Does
+        not support compound fractions."""
         (numer, denom) = frac.split('/')
         return f"\\nicefrac{{{numer}}}{{{denom}}}"
 

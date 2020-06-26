@@ -21,7 +21,8 @@ def acmrxx(beta_total, collapse_prob, xin=0.622):
     collapse_prob:
         Collapse probability being checked (e.g. 0.20 for ACMR20)
     xin = 0.622:
-        Starting value for the nonlinear solution. Tweak this if convergence issues.
+        Starting value for the nonlinear solution. Tweak this if there are
+        convergence issues.
 
     Ref: FEMA P695 Section 7.4
     """
@@ -44,7 +45,8 @@ _rating_values = {
 }
 
 
-def beta_total(rating_DR: str, rating_TD: str, rating_MDL: str, mu_T=3.0) -> float:
+def beta_total(rating_DR: str, rating_TD: str, rating_MDL: str,
+               mu_T=3.0) -> float:
     """Compute the total uncertainty present in th system.
 
     Parameters
@@ -72,7 +74,8 @@ def beta_total(rating_DR: str, rating_TD: str, rating_MDL: str, mu_T=3.0) -> flo
 _mapped_value_dict = {
     "dmax": {
         "ss": 1.5,
-        "s1": 0.59999999999,  # Actually 0.60 but "should be taken as less than 0.60" *eyeroll*
+        # Actually 0.60 but "should be taken as less than 0.60" *eyeroll*
+        "s1": 0.59999999999,
         "fa": 1.0,
         "fv": 1.50,
         "sms": 1.50,
@@ -131,12 +134,13 @@ def mapped_value(value: str, sdc: str):
 
 
 _T_INTERP = [
-    0.25, 0.30, 0.35, 0.40, 0.45, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.2, 2.4,
-    2.6, 2.8, 3.0, 3.5, 4.0, 4.5, 5.0
+    0.25, 0.30, 0.35, 0.40, 0.45, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.2, 1.4, 1.6,
+    1.8, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.5, 4.0, 4.5, 5.0
 ]
 _SNRT_INTERP = [
-    0.785, 0.781, 0.767, 0.754, 0.755, 0.742, 0.607, 0.541, 0.453, 0.402, 0.350, 0.303, 0.258,
-    0.210, 0.169, 0.149, 0.134, 0.119, 0.106, 0.092, 0.081, 0.063, 0.053, 0.046, 0.041
+    0.785, 0.781, 0.767, 0.754, 0.755, 0.742, 0.607, 0.541, 0.453, 0.402, 0.350,
+    0.303, 0.258, 0.210, 0.169, 0.149, 0.134, 0.119, 0.106, 0.092, 0.081, 0.063,
+    0.053, 0.046, 0.041
 ]
 
 
@@ -145,10 +149,12 @@ def sf1(T, sdc):
 
     Parameters
     ----------
-    T:
+    T : float
         Period of the structure
-    sdc:
+
+    sdc : str
         Seismic design category
+
 
     Ref: FEMA P695 Section
     """
@@ -170,6 +176,7 @@ def smt(T, sdc):
     ----------
     T : float
         Fundamental period of the structure (seconds)
+
     sdc : str
         Seismic design category
     """
@@ -181,10 +188,9 @@ def smt(T, sdc):
         return SM1/T
 
 
-#
-#   Spectral shape function stuff
-#
-
+#-------------------------------------------
+# Spectral shape factor stuff
+#-------------------------------------------
 _Z_SSF_DICT = {
     "Dmax":
         np.array([
@@ -284,10 +290,15 @@ def fundamental_period(hn, Ct, x, sdc):
     ----------
     hn : float
         Height of the structure (ft)
+
     Ct : float
         Building period coefficient.
+
     x : float
         Exponent on building height.
+
+    sdc : str
+        Seismic design category.
 
     Returns
     -------
@@ -306,11 +317,13 @@ def seismic_response_coeff(R, T, sdc):
 
     Parameters
     ----------
-    R:
+    R : float
         Response modification factor.
-    T:
+
+    T : float
         Fundamental period (s).
-    sdc:
+
+    sdc : str
         Seismic design category (Dmax, Dmin, etc.).
 
     Note that this function follows the assumptions and restrictions enforced by
@@ -319,7 +332,8 @@ def seismic_response_coeff(R, T, sdc):
     lower. For a more general function, see ``asce7_16.seismic_response_coeff``.
     """
     if T > 4.0:
-        warnings.warn(f"seismic_response_coeff: Given period (T = {T} s) is out of FEMA P695 range")
+        warnings.warn('seismic_response_coeff: Given period '
+                      f'(T = {T} s) is out of FEMA P695 range')
 
     Ts = mapped_value('Ts', sdc)
     SD1 = mapped_value('SD1', sdc)

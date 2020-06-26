@@ -4,7 +4,8 @@ unyt.define_unit('kip', 1000*unyt.lb)
 unyt.define_unit('kipf', 1000*unyt.lbf)
 
 
-def process_unit_input(in_, default_units=None, convert=False, registry=None) -> unyt.unyt_array:
+def process_unit_input(in_, default_units=None, convert=False,
+                       registry=None) -> unyt.unyt_array:
     """Process an input value that may or may not have units.
 
     Accepts the following input styles::
@@ -29,8 +30,8 @@ def process_unit_input(in_, default_units=None, convert=False, registry=None) ->
     convert : bool, optional
         Convert all inputs to `default_units` (default: False)
     registry : unyt.UnitRegistry, optional
-        Necessary if the desired units are not in the default unit registry. Used to
-        construct the returned unyt.unit_array object.
+        Necessary if the desired units are not in the default unit registry.
+        Used to construct the returned unyt.unit_array object.
 
     Returns
     -------
@@ -43,7 +44,8 @@ def process_unit_input(in_, default_units=None, convert=False, registry=None) ->
             value, units = in_
             q = unyt.unyt_array(value, units, registry=registry)
         else:
-            raise ValueError("Input tuple must be length 2; given had length {}".format(len(in_)))
+            raise ValueError('Input tuple must be length 2; '
+                             f'given had length {len(in_)}')
     else:
         q = unyt.unyt_array(in_, default_units, registry=registry)
 

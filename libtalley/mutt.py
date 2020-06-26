@@ -4,6 +4,7 @@ Mutt must be appropriately configured on the system and available on the PATH.
 """
 import subprocess as sub
 
+
 def send(to, subject, message, attach=None):
     """Send an email using mutt.
     
@@ -35,4 +36,3 @@ def send(to, subject, message, attach=None):
 
     process = sub.run(cmd, input=message.encode())
     return process
-    

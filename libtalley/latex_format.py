@@ -1,5 +1,6 @@
 """Functions that format strings into the appropriate LaTeX format."""
 
+
 def diff(f, x, n=1):
     """Derivative representation.
     
@@ -19,4 +20,3 @@ def diff(f, x, n=1):
         level = ''
 
     return Rf"\frac{{{differ}{level}{{{f}}}}}{{{differ}{{{x}}}{level}}}"
-    
