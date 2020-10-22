@@ -203,9 +203,6 @@ class Color:
         """RGB value of the color, normalized to 1."""
         return tuple(v/255 for v in self.RGB)
 
-    def __str__(self):
-        return f"Color(rgb={self.RGB}, cmyk={self.CMYK})"
-
     def __repr__(self):
         return f"Color(rgb={self.RGB}, cmyk={self.CMYK})"
 
