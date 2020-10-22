@@ -11,6 +11,18 @@ from scipy.interpolate import interp1d, interp2d
 from . import asce7_16
 
 
+__all__ = [
+    'acmrxx',
+    'beta_total',
+    'fundamental_period',
+    'mapped_value',
+    'seismic_response_coeff',
+    'sf1',
+    'smt',
+    'ssf',
+]
+
+
 def acmrxx(beta_total, collapse_prob, xin=0.622):
     """Compute the acceptable value of the adjusted collapse margin ratio (ACMR).
 
@@ -45,8 +57,10 @@ _rating_values = {
 }
 
 
-def beta_total(rating_DR: str, rating_TD: str, rating_MDL: str,
-               mu_T=3.0) -> float:
+def beta_total(rating_DR: str,
+               rating_TD: str,
+               rating_MDL: str,
+               mu_T: float = 3.0) -> float:
     """Compute the total uncertainty present in th system.
 
     Parameters
