@@ -156,6 +156,27 @@ class ShapesTable():
         else:
             return unyt.unyt_quantity(self.data[prop][shape], units)
 
+    def get_shape(self, shape: str, include_units: bool = True):
+        """
+        Parameters
+        ----------
+        shape : str
+            Name of the shape to retrieve.
+        include_units : bool
+            Whether to include units in the returned shape data. (default: True)
+        
+        Returns
+        -------
+        pd.Series
+        """
+        shape_data = self.data.loc[shape].dropna()
+        if include_units:
+            for prop, value in shape_data.items():
+                units = self.units.get(prop)
+                if units is not None:
+                    shape_data[prop] = unyt.unyt_quantity(value, units)
+        return shape_data
+
     def lightest_shape(self, shape_list):
         """Return the lightest shape (force/length) from the given list.
 
