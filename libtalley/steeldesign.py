@@ -90,8 +90,23 @@ class SteelMaterial():
                    material.Rt)
 
 
-_MATERIALS_FILE = os.path.join(_MODULE_PATH, 'steel-materials.csv')
-MATERIALS = pd.read_csv(_MATERIALS_FILE).set_index('name')
+MATERIALS = pd.DataFrame.from_dict(
+    columns=['application', 'E', 'Fy', 'Fu', 'Ry', 'Rt'],
+    data={
+        'A36': ['Plate', 29e6, 36e3, 58e3, 1.3, 1.2],
+        'A500 Gr. B': ['HSS', 29e6, 46e3, 58e3, 1.4, 1.3],
+        'A500 Gr. C': ['HSS', 29e6, 50e3, 62e3, 1.3, 1.2],
+        'A572 Gr. 50': ['Hot-rolled', 29e6, 50e3, 65e3, 1.1, 1.1],
+        'A572 Gr. 55': ['Hot-rolled', 29e6, 55e3, 70e3, 1.1, 1.1],
+        'A572 Gr. 42': ['Plate', 29e6, 42e3, 60e3, 1.3, 1.0],
+        'A572 Gr. 50': ['Plate', 29e6, 50e3, 65e3, 1.1, 1.2],
+        'A572 Gr. 55': ['Plate', 29e6, 55e3, 70e3, 1.1, 1.2],
+        'A992': ['Hot-rolled', 29e6, 50e3, 65e3, 1.1, 1.1],
+        'A1085': ['HSS', 29e6, 50e3, 65e3, 1.25, 1.15],
+        'BRB42': ['BRB', 29e6, 38e3, 70e3, 1.21052631578947, 1.0],
+    },
+    orient='index')
+MATERIALS.index.rename('name', inplace=True)
 
 
 #==============================================================================#
