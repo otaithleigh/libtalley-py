@@ -199,7 +199,7 @@ class Color:
         return '#' + ''.join(hexcodes)
 
     @property
-    def RGB1(self) -> (float, float, float):
+    def RGB1(self) -> typing.Tuple[float, float, float]:
         """RGB value of the color, normalized to 1."""
         return tuple(v/255 for v in self.RGB)
 
