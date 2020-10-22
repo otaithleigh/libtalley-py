@@ -2,7 +2,7 @@ import dataclasses
 import enum
 import fractions
 import os
-from collections import namedtuple
+from typing import NamedTuple
 
 import numpy as np
 import pandas as pd
@@ -38,18 +38,18 @@ class SteelMaterial():
     E : float, unyt.unyt_array
         Elastic modulus. If units are not specified, assumed to be psi.
     Fy : float, unyt.unyt_array
-        Yield strength. If units are not specified, assumed to be psi.
+        Design yield strength. If units are not specified, assumed to be psi.
     Fu : float, unyt.unyt_array
-        Tensile strength. If units are not specified, assumed to be psi.
+        Design tensile strength. If units are not specified, assumed to be psi.
     Ry : float
         Expected yield strength factor. Dimensionless.
     Rt : float
         Expected tensile strength factor. Dimensionless.
     """
     name: str
-    E: float
-    Fy: float
-    Fu: float
+    E: unyt.unyt_quantity
+    Fy: unyt.unyt_quantity
+    Fu: unyt.unyt_quantity
     Ry: float
     Rt: float
 
@@ -98,7 +98,7 @@ MATERIALS = pd.read_csv(_MATERIALS_FILE).set_index('name')
 #==[ Shapes table ]============================================================#
 #==============================================================================#
 class ShapesTable():
-    def __init__(self, data, units):
+    def __init__(self, data: pd.DataFrame, units: pd.Series):
         """
         Parameters
         ----------
@@ -110,7 +110,7 @@ class ShapesTable():
         self.data = data
         self.units = units
 
-    def get_prop(self, shape, prop):
+    def get_prop(self, shape: str, prop: str):
         """Return a property from the table with units.
 
         If a property is not defined for the given shape, nan is returned. If
@@ -173,7 +173,7 @@ class ShapesTable():
 
         Parameters
         ----------
-        file : str
+        file : str, file-like
             Name of the file to load.
         units : dict
             Dictionary of units, with keys corresponding to the column names.
@@ -429,26 +429,33 @@ class Ductility(enum.Enum):
     MODERATE = 'MODERATE'
 
 
-def check_seismic_wtr_wide_flange(shape,
+class WtrResults(NamedTuple):
+    passed: bool
+    ht: float
+    ht_max: float
+    bt: float
+    bt_max: float
+
+
+def check_seismic_wtr_wide_flange(shape: str,
                                   mem_type: MemberType,
                                   level: Ductility,
-                                  Ca,
-                                  material=None
-                                  ) -> (bool, float, float, float, float):
+                                  Ca: float,
+                                  material: SteelMaterial = None) -> WtrResults:
     """Check the width-to-thickness ratio of a W shape for the given ductility.
 
     Parameters
     ----------
-    shape:
+    shape : str
         AISC manual name for the shape being checked.
-    mem_type:
+    mem_type : MemberType
         MemberType of the member.
-    level:
+    level : Ductility
         Level of Ductility being checked.
-    Ca:
+    Ca : float
         = P_u / (phi_c * P_y); adjusts maximum web width-to-thickness ratio
         for beams and columns. Does not affect braces. Should be < 1.0.
-    material:
+    material : SteelMaterial, optional
         Material to use (default A992, Fy = 50 ksi)
 
     Returns
@@ -497,12 +504,27 @@ def check_seismic_wtr_wide_flange(shape,
     else:
         raise SteelError("Unsupported member type: {}".format(mem_type))
 
-    WtrResults = namedtuple('WtrResults',
-                            ['passed', 'ht', 'ht_max', 'bt', 'bt_max'])
     return WtrResults(ht <= ht_max and bt <= bt_max, ht, ht_max, bt, bt_max)
 
 
-def brace_capacity(shape, length, material):
+class Capacity(NamedTuple):
+    tension: unyt.unyt_quantity
+    compression: unyt.unyt_quantity
+    postbuckling: unyt.unyt_quantity
+
+
+def brace_capacity(shape: str, length: unyt.unyt_quantity,
+                   material: SteelMaterial) -> Capacity:
+    """
+    Parameters
+    ----------
+    shape : str
+        Steel shape of the brace.
+    length : unyt_quantity
+        Unbraced length of the brace.
+    material : SteelMaterial
+        Brace material.
+    """
     ry = shapes_US.get_prop(shape, 'ry')
     Fe = np.pi**2*material.E/(length/ry)**2
     RyFy_Fe = material.Ry*material.Fy/Fe
@@ -517,6 +539,4 @@ def brace_capacity(shape, length, material):
     compression = min(tension, 1/0.877*Fcre*Ag)
     postbuckling = 0.3*compression
 
-    Capacity = namedtuple('Capacity',
-                          ['tension', 'compression', 'postbuckling'])
     return Capacity(tension, compression, postbuckling)
