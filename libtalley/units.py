@@ -1,8 +1,5 @@
 import unyt
 
-unyt.define_unit('kip', 1000*unyt.lbf, tex_repr='\\rm{kips}')
-unyt.define_unit('kipf', 1000*unyt.lbf, tex_repr='\\rm{kips}')
-unyt.define_unit('ksi', (1000, 'lbf/inch**2'))
 
 def process_unit_input(in_, default_units=None, convert=False,
                        registry=None) -> unyt.unyt_array:
