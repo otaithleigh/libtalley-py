@@ -151,9 +151,9 @@ class ShapesTable():
         """
         units = self.units.get(prop)
         if units is None:
-            return self.data[prop][shape]
+            return self.data.at[shape, prop]
         else:
-            return unyt.unyt_quantity(self.data[prop][shape], units)
+            return unyt.unyt_quantity(self.data.at[shape, prop], units)
 
     def get_shape(self, shape: str, include_units: bool = True):
         """
