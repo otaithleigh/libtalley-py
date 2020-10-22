@@ -4,11 +4,16 @@ channels:
   - conda-forge
 dependencies:
   - python >= 3.7
+  - h5py
   - numpy >= 1.15.0
   - pandas
   - scipy >= 1.0.0
   - tabulate
   - unyt >= 2.8.0
+  # Development
   - pylint
   - yapf
   - ipython
+  - pip
+  - pip:
+    - '-e .'
