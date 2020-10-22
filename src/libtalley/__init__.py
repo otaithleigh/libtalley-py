@@ -195,7 +195,7 @@ class Color:
         >>> smokey.HEX
         '#58595b'
         """
-        hexcodes = [hex(v).split('x')[1].rjust(2, '0') for v in self.RGB]
+        hexcodes = [f'{v:02x}' for v in self.RGB]
         return '#' + ''.join(hexcodes)
 
     @property
