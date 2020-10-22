@@ -1,7 +1,7 @@
 import dataclasses
 import enum
 import fractions
-import os
+import importlib.resources
 from typing import NamedTuple
 
 import numpy as np
@@ -13,7 +13,6 @@ from . import units
 #===============================================================================
 # Constants
 #===============================================================================
-_MODULE_PATH = os.path.dirname(__file__)
 TRUE_VALUES = ['T']
 FALSE_VALUES = ['F']
 NA_VALUES = ['–']
@@ -240,8 +239,7 @@ class ShapesTable():
         return cls(data, pd.Series(units))
 
 
-_SHAPES_US_FILE = os.path.join(_MODULE_PATH,
-                               'aisc-shapes-database-v15-0-US.csv.bz2')
+_SHAPES_US_FILE = 'aisc-shapes-database-v15-0-US.csv.bz2'
 _SHAPES_US_UNITS = {
     'W': 'lbf/ft',
     'A': 'inch**2',
@@ -325,8 +323,7 @@ _SHAPES_US_UNITS = {
     'WGo': 'inch',
 }
 
-_SHAPES_SI_FILE = os.path.join(_MODULE_PATH,
-                               'aisc-shapes-database-v15-0-SI.csv.bz2')
+_SHAPES_SI_FILE = 'aisc-shapes-database-v15-0-SI.csv.bz2'
 _SHAPES_SI_UNITS = {
     'W': 'kg/m',
     'A': 'mm**2',
@@ -410,8 +407,14 @@ _SHAPES_SI_UNITS = {
     'WGo': 'mm',
 }
 
-shapes_US = ShapesTable.from_file(_SHAPES_US_FILE, _SHAPES_US_UNITS)
-shapes_SI = ShapesTable.from_file(_SHAPES_SI_FILE, _SHAPES_SI_UNITS)
+
+def _load_shapes_db(filename, units):
+    with importlib.resources.path('libtalley', filename) as p:
+        return ShapesTable.from_file(p, units)
+
+
+shapes_US = _load_shapes_db(_SHAPES_US_FILE, _SHAPES_US_UNITS)
+shapes_SI = _load_shapes_db(_SHAPES_SI_FILE, _SHAPES_SI_UNITS)
 
 
 def property_lookup(shape, prop):
