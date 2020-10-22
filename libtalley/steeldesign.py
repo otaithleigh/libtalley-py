@@ -563,15 +563,16 @@ def brace_capacity(shape: str, length: unyt.unyt_quantity,
     """
     ry = shapes_US.get_prop(shape, 'ry')
     Fe = np.pi**2*material.E/(length/ry)**2
-    RyFy_Fe = material.Ry*material.Fy/Fe
+    RyFy = material.eFy
+    RyFy_Fe = RyFy/Fe
 
     if RyFy_Fe <= 2.25:
-        Fcre = 0.658**RyFy_Fe*material.Ry*material.Fy
+        Fcre = 0.658**RyFy_Fe*RyFy
     else:
         Fcre = 0.877*Fe
 
     Ag = shapes_US.get_prop(shape, 'A')
-    tension = material.Ry*material.Fy*Ag
+    tension = RyFy*Ag
     compression = min(tension, 1/0.877*Fcre*Ag)
     postbuckling = 0.3*compression
 
