@@ -22,7 +22,8 @@ class Boxer():
                  pad=' ',
                  first=None,
                  final=None,
-                 rpad=None):
+                 rpad=None,
+                 width=80):
         """Create a new Boxer.
 
         Parameters
@@ -45,6 +46,8 @@ class Boxer():
         rpad : str, optional
             Alternate padding to use for the right-hand side of the box.
             (default: None)
+        width : int, optional
+            Default width in characters of created boxes. (default: 80)
         """
         self.left = left
         self.right = right
@@ -53,8 +56,9 @@ class Boxer():
         self.final = right if final is None else final
         self.lpad = pad
         self.rpad = pad if rpad is None else rpad
+        self.width = width
 
-    def textwidth(self, width=80):
+    def textwidth(self, width=None):
         """Return the available width in characters for the Boxer.
 
         Parameters
@@ -62,11 +66,13 @@ class Boxer():
         width : int, optional
             Total box width to calculate from.
         """
+        if width is None:
+            width = self.width
         # textwidth is from the box size, minus the two ends, minus two pads
         return (width - len(self.left) - len(self.right) - len(self.lpad) -
                 len(self.rpad))
 
-    def box(self, text, width=80, wrap=True):
+    def box(self, text, width=None, wrap=True):
         """Box some text, returned as a joined string.
 
         Parameters
@@ -74,7 +80,7 @@ class Boxer():
         text : str
             Text to box.
         width : int, optional
-            Total width of the box. (default: 80)
+            Total width of the box. (default: self.width)
         wrap : bool, optional
             If True, wrap long lines in `text`. If False, warnings will be
             issued for long lines but they will be left as-is, creating a spiky
@@ -82,7 +88,7 @@ class Boxer():
         """
         return '\n'.join(self.boxsplit(text, width, wrap))
 
-    def boxsplit(self, text, width=80, wrap=True):
+    def boxsplit(self, text, width=None, wrap=True):
         """Box some text, returned as a list of lines.
 
         Parameters
@@ -90,12 +96,15 @@ class Boxer():
         text : str
             Text to box.
         width : int, optional
-            Total width of the box. (default: 80)
+            Total width of the box. (default: self.width)
         wrap : bool, optional
             If True, wrap long lines in `text`. If False, warnings will be
             issued for long lines but they will be left as-is, creating a spiky
             box. (default: True)
         """
+        if width is None:
+            width = self.width
+
         textwidth = self.textwidth(width)
         toprulewidth = width - len(self.first) - len(self.right)
         bottomrulewidth = width - len(self.left) - len(self.final)
