@@ -213,19 +213,23 @@ def pybox(text, width=80, wrap=True):
     return _PyBoxer.box(text, width=width, wrap=wrap)
 
 
-def latex_name(shape):
+def latex_name(shape, frac='nicefrac', join='-'):
     """Return LaTeX code for nicely typesetting a steel section name.
 
     Assumes the "by" part of the section is represented by an 'X', and that
-    compound fractions are separated by '-' (hyphen, not endash). Output
-    requires the LaTeX package ``nicefrac`` or its superpackage, ``units``.
+    compound fractions are separated by '-' (hyphen, not endash).
 
     Only tested on W and HSS names so far.
 
     Parameters
     ----------
-    shape:
+    shape : str
         Name of a steel section.
+    frac : {'frac', 'tfrac', 'sfrac', 'nicefrac'}, optional
+        The fraction macro to use. (default: 'nicefrac')
+    join : str, optional
+        The string that joins the integer and fractional parts of a compound
+        fraction (default: '-')
 
     Example
     -------
@@ -233,18 +237,22 @@ def latex_name(shape):
     >>> latex_name(name)
     'HSS3-\\nicefrac{1}{2}$\\times$3-\\nicefrac{1}{2}$\\times$\\nicefrac{3}{16}'
     """
-    def frac_to_nicefrac(frac):
+    recognized_macros = ['frac', 'tfrac', 'sfrac', 'nicefrac']
+    if frac not in recognized_macros:
+        raise ValueError(f'Unrecognized fraction macro {frac!r}')
+
+    def frac_to_nicefrac(f):
         """Return LaTeX code for a nicefrac from a fraction like '3/16'. Does
         not support compound fractions."""
-        (numer, denom) = frac.split('/')
-        return f"\\nicefrac{{{numer}}}{{{denom}}}"
+        (numer, denom) = f.split('/')
+        return f"\\{frac}{{{numer}}}{{{denom}}}"
 
     shape_parts = shape.split('X')
     for [index, part] in enumerate(shape_parts):
         if '/' in part and '-' in part:  # need to activate compound fraction logic
-            (front, frac) = part.split('-')
-            newfrac = frac_to_nicefrac(frac)
-            shape_parts[index] = front + '-' + newfrac
+            (integer, fraction) = part.split('-')
+            newfraction = frac_to_nicefrac(fraction)
+            shape_parts[index] = integer + join + newfraction
         elif '/' in part:  # need to activate fraction logic
             shape_parts[index] = frac_to_nicefrac(part)
 
