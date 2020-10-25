@@ -72,7 +72,7 @@ class Boxer():
         return (width - len(self.left) - len(self.right) - len(self.lpad) -
                 len(self.rpad))
 
-    def box(self, text, width=None, wrap=True):
+    def box(self, text, width=None, wrap=True, strip=True):
         """Box some text, returned as a joined string.
 
         Parameters
@@ -85,10 +85,12 @@ class Boxer():
             If True, wrap long lines in `text`. If False, warnings will be
             issued for long lines but they will be left as-is, creating a spiky
             box. (default: True)
+        strip : bool, optional
+            If True, strip trailing whitespace from each line. (default: True)
         """
-        return '\n'.join(self.boxsplit(text, width, wrap))
+        return '\n'.join(self.boxsplit(text, width, wrap, strip))
 
-    def boxsplit(self, text, width=None, wrap=True):
+    def boxsplit(self, text, width=None, wrap=True, strip=True):
         """Box some text, returned as a list of lines.
 
         Parameters
@@ -101,6 +103,8 @@ class Boxer():
             If True, wrap long lines in `text`. If False, warnings will be
             issued for long lines but they will be left as-is, creating a spiky
             box. (default: True)
+        strip : bool, optional
+            If True, strip trailing whitespace from each line. (default: True)
         """
         if width is None:
             width = self.width
@@ -153,6 +157,8 @@ class Boxer():
                 lines.append(left + wline.ljust(textwidth) + right)
 
         lines.append(bottomrule)
+        if strip:
+            lines = [l.rstrip() for l in lines]
         return lines
 
 
