@@ -181,7 +181,7 @@ class ShapesTable():
 
         Works across different shape series, e.g. comparing an HSS and W works
         fine. If two or more shapes have the same lightest weight, a shape is
-        returned, but which is one is undefined.
+        returned, but which one is returned is undefined.
 
         Parameters
         ----------
