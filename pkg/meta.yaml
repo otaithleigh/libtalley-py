@@ -15,7 +15,6 @@ requirements:
     - python
   run:
     - python>=3.7.0
-    - h5py
     - numpy>=1.15.0
     - pandas
     - scipy>=1.0.0
@@ -28,7 +27,6 @@ test:
     - libtalley.asce7_16
     - libtalley.asce7_16.seismic
     - libtalley.fema_p695
-    - libtalley.hdf5matfile
     - libtalley.latex_format
     - libtalley.mutt
     - libtalley.steeldesign
