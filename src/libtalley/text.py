@@ -190,6 +190,29 @@ def cbox(text, width=80, wrap=True):
     return _CBoxer.box(text, width=width, wrap=wrap)
 
 
+def pybox(text, width=80, wrap=True):
+    """
+    Parameters
+    ----------
+    text : str
+        Text to box.
+    width : int, optional
+        Width of the box. (Note: not text width) (default: 80)
+    wrap : bool, optional
+        If True, wrap long lines in `text`. If False, warnings will be issued
+        for long lines but they will be left as-is, creating a spiky box.
+        (default: True)
+
+    Example
+    -------
+    >>> print(pybox("hello world!", width=40))
+    #======================================#
+    # hello world!                         #
+    #======================================#
+    """
+    return _PyBoxer.box(text, width=width, wrap=wrap)
+
+
 def latex_name(shape):
     """Return LaTeX code for nicely typesetting a steel section name.
 
