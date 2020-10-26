@@ -3,6 +3,7 @@ import enum
 import fractions
 import importlib.resources
 from typing import NamedTuple
+import warnings
 
 import numpy as np
 import pandas as pd
@@ -35,11 +36,11 @@ class SteelMaterial():
     name : str
         Name of the material.
     E : float, unyt.unyt_array
-        Elastic modulus. If units are not specified, assumed to be psi.
+        Elastic modulus. If units are not specified, assumed to be ksi.
     Fy : float, unyt.unyt_array
-        Design yield strength. If units are not specified, assumed to be psi.
+        Design yield strength. If units are not specified, assumed to be ksi.
     Fu : float, unyt.unyt_array
-        Design tensile strength. If units are not specified, assumed to be psi.
+        Design tensile strength. If units are not specified, assumed to be ksi.
     Ry : float
         Expected yield strength factor. Dimensionless.
     Rt : float
@@ -53,15 +54,15 @@ class SteelMaterial():
     Rt: float
 
     def __post_init__(self):
-        self.E = units.process_unit_input(self.E, default_units='psi')
-        self.Fy = units.process_unit_input(self.Fy, default_units='psi')
-        self.Fu = units.process_unit_input(self.Fu, default_units='psi')
+        self.E = units.process_unit_input(self.E, default_units='ksi')
+        self.Fy = units.process_unit_input(self.Fy, default_units='ksi')
+        self.Fu = units.process_unit_input(self.Fu, default_units='ksi')
         self.Ry = units.process_unit_input(self.Ry,
                                            default_units='dimensionless',
-                                           convert=True).v
+                                           convert=True).item()
         self.Rt = units.process_unit_input(self.Rt,
                                            default_units='dimensionless',
-                                           convert=True).v
+                                           convert=True).item()
         if self.Fy > self.Fu:
             raise SteelError('SteelMaterial: yield strength must'
                              ' be less than tensile strength')
@@ -75,37 +76,69 @@ class SteelMaterial():
         return self.Fu*self.Rt
 
     @classmethod
-    def from_name(cls, name, application=None):
-        if application is None:
-            material = MATERIALS.loc[name]
-        else:
-            material = MATERIALS[MATERIALS.application == application].loc[name]
-        # Multiple matching materials will be returned as a DataFrame; a single
-        # material will be a Series
-        if isinstance(material, pd.DataFrame):
-            raise SteelError('multiple materials found: specify'
-                             ' application to narrow search')
-        return cls(name, material.E, material.Fy, material.Fu, material.Ry,
-                   material.Rt)
+    def from_name(cls, name: str, grade: str = None, application: str = None):
+        """Look up a steel material based on name, grade, and application.
+
+        All look-ups are case-insensitive.
+
+        Parameters
+        ----------
+        name : str
+            The name of the material specification (e.g. 'A572').
+        grade : int, str, optional
+            The grade of the material (e.g. 50 or 'B'). Only required if
+            multiple grades are available.
+        application : {'brb', 'hot-rolled', 'hss', 'plate', 'rebar'}, optional
+            The application the material is used for. Only required if multiple
+            applications are defined for the same material specification.
+
+        Raises
+        ------
+        ValueError
+            If multiple materials match the provided information. For example,
+            requesting an A500 steel also requires specifying a grade (A or B).
+        """
+        name, grade = _check_deprecated_material(name, grade)
+
+        def normalize(input):
+            if pd.isna(input):
+                return slice(None)
+            else:
+                return str(input).casefold()
+
+        material = MATERIALS_US.loc[normalize(name),
+                                    normalize(grade),
+                                    normalize(application)]
+        if len(material) != 1:
+            raise ValueError('Multiple materials found: specify grade '
+                             'and/or application to narrow search')
+        return cls(name, **material.iloc[0])
+
+    @staticmethod
+    def available_materials():
+        """Return a DataFrame of the available materials, whose rows can be used
+        as lookups for `from_name`."""
+        return MATERIALS_US.index.to_frame(index=False)
 
 
-MATERIALS = pd.DataFrame.from_dict(
-    columns=['application', 'E', 'Fy', 'Fu', 'Ry', 'Rt'],
-    data={
-        'A36': ['Plate', 29e6, 36e3, 58e3, 1.3, 1.2],
-        'A500 Gr. B': ['HSS', 29e6, 46e3, 58e3, 1.4, 1.3],
-        'A500 Gr. C': ['HSS', 29e6, 50e3, 62e3, 1.3, 1.2],
-        'A572 Gr. 50': ['Hot-rolled', 29e6, 50e3, 65e3, 1.1, 1.1],
-        'A572 Gr. 55': ['Hot-rolled', 29e6, 55e3, 70e3, 1.1, 1.1],
-        'A572 Gr. 42': ['Plate', 29e6, 42e3, 60e3, 1.3, 1.0],
-        'A572 Gr. 50': ['Plate', 29e6, 50e3, 65e3, 1.1, 1.2],
-        'A572 Gr. 55': ['Plate', 29e6, 55e3, 70e3, 1.1, 1.2],
-        'A992': ['Hot-rolled', 29e6, 50e3, 65e3, 1.1, 1.1],
-        'A1085': ['HSS', 29e6, 50e3, 65e3, 1.25, 1.15],
-        'BRB42': ['BRB', 29e6, 38e3, 70e3, 1.21052631578947, 1.0],
-    },
-    orient='index')
-MATERIALS.index.rename('name', inplace=True)
+def _check_deprecated_material(name, grade):
+    if ' Gr. ' in name:
+        _name, grade = name.split(' Gr. ')
+        warnings.warn(f'Convert old material name {name!r} to '
+                      f'({_name!r}, grade={grade!r})')
+        return (_name, grade)
+    else:
+        return (name, grade)
+
+
+def _load_materials_db(filename):
+    with importlib.resources.path('libtalley', filename) as p:
+        material_df = pd.read_csv(p, index_col=['name', 'grade', 'application'])
+    material_df.sort_index(inplace=True)
+    return material_df
+
+
+MATERIALS_US = _load_materials_db('steel-materials-us.csv')
 
 
 #==============================================================================#
