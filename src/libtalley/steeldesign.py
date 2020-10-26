@@ -163,7 +163,7 @@ class ShapesTable():
             Name of the shape to retrieve.
         include_units : bool
             Whether to include units in the returned shape data. (default: True)
-        
+
         Returns
         -------
         pd.Series
