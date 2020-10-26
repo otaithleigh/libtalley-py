@@ -3,6 +3,7 @@ import enum
 import fractions
 import importlib.resources
 from typing import NamedTuple
+import typing
 import warnings
 
 import numpy as np
@@ -485,6 +486,86 @@ def lightest_shape(shape_list):
     'HSS4X4X1/2'
     """
     return shapes_US.lightest_shape(shape_list)
+
+
+_series_class_names = {
+    '2L': 'DoubleAngle',
+    'C': 'Channel',
+    'HP': 'HPile',
+    'HSS': 'Hss',
+    'L': 'Angle',
+    'M': 'Modified',
+    'MC': 'ModifiedChannel',
+    'MT': 'ModifiedTee',
+    'PIPE': 'Pipe',
+    'S': 'Standard',
+    'ST': 'StandardTee',
+    'W': 'WideFlange',
+    'WT': 'WideFlangeTee',
+}
+
+# Populated by _create_shape_series_class
+_series_class_dispatch = {}
+
+
+class SteelShape():
+    def __repr__(self):
+        r = [self.__class__.__name__ + '(']
+        for field in dataclasses.fields(self):
+            attr = field.name
+            r.append(f'    {attr}={getattr(self, attr)!r},')
+        r.append(')')
+        return '\n'.join(r)
+
+    def __getitem__(self, key):
+        if key in self.__dataclass_fields__:
+            return getattr(self, key)
+        else:
+            raise KeyError(key)
+
+    @classmethod
+    def from_name(cls, name, table='US', include_units=True):
+        shapes_df = {
+            'US': shapes_US,
+            'SI': shapes_SI,
+        }[table]
+        data = shapes_df.get_shape(name, include_units=include_units)
+        idents = _shape_data_columns_to_identifier(data.index).values
+        return cls(**{ident: prop for ident, prop in zip(idents, data.values)})
+
+
+def _shape_data_columns_to_identifier(columns: pd.Index) -> pd.Series:
+    return columns.to_series().str.replace('/', '_').str.replace('[()]', '')
+
+
+def _create_shape_series_class(series_name: str, data: pd.DataFrame,
+                               units: dict):
+    cls_name = _series_class_names[series_name] + 'Shape'
+    field_names = _shape_data_columns_to_identifier(data.columns)
+
+    def get_type(name):
+        if name in units:
+            return unyt.unyt_quantity
+        else:
+            return typing.Any
+
+    fields = [(ident, get_type(name)) for name, ident in field_names.items()]
+    cls = dataclasses.make_dataclass(
+        cls_name,
+        fields,
+        bases=(SteelShape, ),
+        namespace={'__module__': SteelShape.__module__},
+        repr=False)
+    # Inject the created class into the global namespace, and add to the lookup
+    # table so that ShapesTable.get_shape can find it
+    globals()[cls_name] = cls
+    _series_class_dispatch[series_name] = cls
+    return cls
+
+
+for series_name, series_data in shapes_US.data.groupby('Type'):
+    _create_shape_series_class(series_name, series_data.dropna('columns'),
+                               _SHAPES_US_UNITS)
 
 
 #==============================================================================#
