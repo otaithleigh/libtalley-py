@@ -5,7 +5,7 @@ import numpy as np
 
 def approximate_period(hn: float, Ct: float, x: float) -> float:
     """Calculate the approximate fundamental period T_a (sec).
-    
+
     Parameters
     ----------
     hn:
@@ -22,7 +22,7 @@ def approximate_period(hn: float, Ct: float, x: float) -> float:
 
 def period_upper_limit_coeff(SD1: float) -> float:
     """Calculate the coefficient for upper limit on calculated period, C_u.
-    
+
     Parameters
     ----------
     SD1:
@@ -42,7 +42,7 @@ def period_upper_limit_coeff(SD1: float) -> float:
 
 def seismic_response_coeff(R, Ie, SDS, SD1, S1, T, T_L) -> float:
     """Calculate the seismic response coefficient, C_s.
-    
+
     Parameters
     ----------
     R:
