@@ -109,10 +109,15 @@ class SteelMaterial():
         material = MATERIALS_US.loc[normalize(name),
                                     normalize(grade),
                                     normalize(application)]
-        if len(material) != 1:
-            raise ValueError('Multiple materials found: specify grade '
-                             'and/or application to narrow search')
-        return cls(name, **material.iloc[0])
+        # Lookup succeeds if we get a Series (exact indexes) or if we get a
+        # DataFrame of length 1 (one or more indexes were sliced, but still only
+        # one result returned).
+        if isinstance(material, pd.DataFrame):
+            if len(material) != 1:
+                raise ValueError('Multiple materials found: specify grade '
+                                'and/or application to narrow search')
+            material = material.iloc[0]
+        return cls(name, **material)
 
     @staticmethod
     def available_materials():
