@@ -30,14 +30,7 @@ def period_upper_limit_coeff(SD1: float) -> float:
 
     Reference: Table 12.8-1
     """
-    if SD1 >= 0.4:
-        cu = 1.4
-    elif SD1 <= 0.1:
-        cu = 1.7
-    else:
-        cu = np.interp(SD1, [0.1, 0.15, 0.2, 0.3, 0.4],
-                       [1.7, 1.6, 1.5, 1.4, 1.4])
-    return cu
+    return np.interp(SD1, [0.1, 0.15, 0.2, 0.3, 0.4], [1.7, 1.6, 1.5, 1.4, 1.4])
 
 
 def seismic_response_coeff(R, Ie, SDS, SD1, S1, T, T_L) -> float:
