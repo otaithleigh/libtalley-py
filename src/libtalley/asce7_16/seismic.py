@@ -55,16 +55,17 @@ def seismic_response_coeff(R, Ie, SDS, SD1, S1, T, T_L) -> float:
 
     Reference: Section 12.8.1.1
     """
-    Cs_basic = SDS/(R/Ie)  # Eq. 12.8-2
+    R_Ie = R/Ie
+    Cs_basic = SDS/R_Ie  # Eq. 12.8-2
 
     if T <= T_L:
-        Cs_max = SD1/(T*(R/Ie))  # Eq. 12.8-3
+        Cs_max = SD1/(T*R_Ie)  # Eq. 12.8-3
     else:
-        Cs_max = SD1*T_L/(T**2*(R/Ie))  # Eq. 12.8-4
+        Cs_max = SD1*T_L/(T**2*R_Ie)  # Eq. 12.8-4
 
     Cs_min = max(0.044*SDS*Ie, 0.01)  # Eq. 12.8-5
     if S1 >= 0.6:
-        Cs_min = max(Cs_min, 0.5*S1/(R/Ie))  # Eq. 12.8-6
+        Cs_min = max(Cs_min, 0.5*S1/R_Ie)  # Eq. 12.8-6
 
     Cs = max(min(Cs_basic, Cs_max), Cs_min)
     return Cs
