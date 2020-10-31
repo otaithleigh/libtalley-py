@@ -115,7 +115,7 @@ class SteelMaterial():
         if isinstance(material, pd.DataFrame):
             if len(material) != 1:
                 raise ValueError('Multiple materials found: specify grade '
-                                'and/or application to narrow search')
+                                 'and/or application to narrow search')
             material = material.iloc[0]
         return cls(name, **material)
 
