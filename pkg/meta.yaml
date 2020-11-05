@@ -17,6 +17,7 @@ requirements:
     - python>=3.7.0
     - numpy>=1.15.0
     - pandas
+    - requests
     - scipy>=1.0.0
     - tabulate
     - conda-forge::unyt>=2.8.0
