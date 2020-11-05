@@ -106,9 +106,10 @@ class SteelMaterial():
             else:
                 return str(input).casefold()
 
-        material = MATERIALS_US.loc[normalize(name),
-                                    normalize(grade),
-                                    normalize(application)]
+        material = cls._get_materials_db().loc[normalize(name),
+                                               normalize(grade),
+                                               normalize(application)]
+
         # Lookup succeeds if we get a Series (exact indexes) or if we get a
         # DataFrame of length 1 (one or more indexes were sliced, but still only
         # one result returned).
@@ -119,11 +120,20 @@ class SteelMaterial():
             material = material.iloc[0]
         return cls(name, **material)
 
-    @staticmethod
-    def available_materials():
+    @classmethod
+    def available_materials(cls):
         """Return a DataFrame of the available materials, whose rows can be used
         as lookups for `from_name`."""
-        return MATERIALS_US.index.to_frame(index=False)
+        return cls._get_materials_db().index.to_frame(index=False)
+
+    @classmethod
+    def _get_materials_db(cls) -> pd.DataFrame:
+        # Delay loading the materials database until required.
+        try:
+            return cls._materials_db
+        except AttributeError:
+            cls._materials_db = _load_materials_db('steel-materials-us.csv')
+            return cls._materials_db
 
 
 def _check_deprecated_material(name, grade):
@@ -141,9 +151,6 @@ def _load_materials_db(filename):
         material_df = pd.read_csv(p, index_col=['name', 'grade', 'application'])
     material_df.sort_index(inplace=True)
     return material_df
-
-
-MATERIALS_US = _load_materials_db('steel-materials-us.csv')
 
 
 #==============================================================================#
