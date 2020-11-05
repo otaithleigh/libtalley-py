@@ -281,7 +281,10 @@ class ShapesTable():
                 data[column].update(converted_data)
                 data[column] = pd.to_numeric(data[column])
 
-        return cls(data, pd.Series(units))
+        data.sort_index(inplace=True)
+        units = pd.Series(units)
+        units.sort_index(inplace=True)
+        return cls(data, units)
 
 
 _SHAPES_US_FILE = 'aisc-shapes-database-v15-0-US.csv.bz2'
