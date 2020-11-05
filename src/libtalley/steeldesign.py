@@ -2,7 +2,7 @@ import dataclasses
 import enum
 import fractions
 import importlib.resources
-from typing import NamedTuple, Union
+from typing import Dict, NamedTuple, Union
 import warnings
 
 import numpy as np
@@ -461,8 +461,25 @@ def _load_shapes_db(filename, units):
         return ShapesTable.from_file(p, units)
 
 
-shapes_US = _load_shapes_db(_SHAPES_US_FILE, _SHAPES_US_UNITS)
-shapes_SI = _load_shapes_db(_SHAPES_SI_FILE, _SHAPES_SI_UNITS)
+class _ShapesTableLoader():
+    _cache: Dict[str, ShapesTable] = {}
+    _loader_dispatch = {
+        'us': (_SHAPES_US_FILE, _SHAPES_US_UNITS),
+        'si': (_SHAPES_SI_FILE, _SHAPES_SI_UNITS),
+    }
+
+    @classmethod
+    def get_shapes_table(cls, units: str) -> ShapesTable:
+        units_key = units.casefold()
+        try:
+            table = cls._cache[units_key]
+        except KeyError:
+            args = cls._loader_dispatch[units_key]
+            cls._cache[units_key] = table = _load_shapes_db(*args)
+        return table
+
+
+get_shapes_table = _ShapesTableLoader.get_shapes_table
 
 
 def property_lookup(shape, prop):
@@ -477,7 +494,7 @@ def property_lookup(shape, prop):
     prop : str
         Name of the property to look up.
     """
-    return shapes_US.data.loc[shape][prop]
+    return get_shapes_table('US').data.at[shape, prop]
 
 
 def lightest_shape(shape_list):
@@ -499,7 +516,7 @@ def lightest_shape(shape_list):
     >>> lightest_shape(['W14X82', 'HSS4X4X1/2'])
     'HSS4X4X1/2'
     """
-    return shapes_US.lightest_shape(shape_list)
+    return get_shapes_table('US').lightest_shape(shape_list)
 
 
 #==============================================================================#
@@ -631,7 +648,7 @@ def brace_capacity(shape: str, length: unyt.unyt_quantity,
     material : SteelMaterial
         Brace material.
     """
-    shape = shapes_US.get_shape(shape)
+    shape = get_shapes_table('US').get_shape(shape)
     ry = shape['ry']
     Fe = np.pi**2*material.E/(length/ry)**2
     RyFy = material.eFy
