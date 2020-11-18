@@ -118,7 +118,11 @@ class SteelMaterial():
                 raise ValueError('Multiple materials found: specify grade '
                                  'and/or application to narrow search')
             material = material.iloc[0]
-        return cls(name, **material)
+
+        name, grade, application = material.name
+        display_grade = '' if pd.isna(grade) else f' Gr. {grade}'
+        display_name = f'{name}{display_grade} ({application})'
+        return cls(display_name.title(), **material)
 
     @classmethod
     def available_materials(cls):
