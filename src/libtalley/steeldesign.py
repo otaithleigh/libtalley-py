@@ -16,7 +16,7 @@ from . import units
 #===============================================================================
 TRUE_VALUES = ['T']
 FALSE_VALUES = ['F']
-NA_VALUES = ['–']
+NA_VALUES = ['\N{EN DASH}']
 
 
 class SteelError(Exception):
