@@ -194,11 +194,12 @@ class ShapesTable():
             If `shape` is not found in the table; if `prop` is not found in the
             table.
         """
+        value = self.data.at[shape.casefold(), prop]
         units = self.units.get(prop)
         if units is None:
-            return self.data.at[shape, prop]
+            return value
         else:
-            return unyt.unyt_quantity(self.data.at[shape, prop], units)
+            return unyt.unyt_quantity(value, units)
 
     def get_shape(self, shape: str, include_units: bool = True):
         """
@@ -213,7 +214,7 @@ class ShapesTable():
         -------
         pd.Series
         """
-        shape_data = self.data.loc[shape].dropna()
+        shape_data = self.data.loc[shape.casefold()].dropna()
         if include_units:
             for prop, value in shape_data.items():
                 units = self.units.get(prop)
@@ -240,7 +241,7 @@ class ShapesTable():
         >>> lightest_shape(['W14X82', 'HSS4X4X1/2'])
         'HSS4X4X1/2'
         """
-        return self.data.loc[shape_list].W.idxmin()
+        return self.data.loc[pd.Series(shape_list).str.casefold()].W.idxmin()
 
     @classmethod
     def from_file(cls,
@@ -268,14 +269,15 @@ class ShapesTable():
         data = pd.read_csv(file,
                            true_values=true_values,
                            false_values=false_values,
-                           na_values=na_values).set_index('AISC_Manual_Label')
+                           na_values=na_values)
+        data.index = pd.Index(data['AISC_Manual_Label'].str.casefold(), name='')
 
         # Convert fractions to floats
         def str2frac2float(s):
             return float(sum(fractions.Fraction(i) for i in s.split()))
 
         for column in data.columns[data.dtypes == object]:
-            if column != 'Type':
+            if column not in ['AISC_Manual_Label', 'Type']:
                 notnull_data = data[column][data[column].notnull()]
                 converted_data = notnull_data.apply(str2frac2float)
                 data[column].update(converted_data)
