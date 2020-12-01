@@ -56,6 +56,24 @@ def all_same_sign(iterable: typing.Iterable) -> bool:
     return v
 
 
+def round_signif(a, p):
+    """Round numeric array a to significant figures p.
+
+    Parameters
+    ----------
+    a : array_like
+        Array to round.
+    p : int
+        Number of significant figures to round to.
+
+    Source: https://stackoverflow.com/a/59888924, with modifications
+    """
+    a = np.asanyarray(a)
+    a_positive = np.where(np.isfinite(a) & (a != 0), np.abs(a), 10**(p-1))
+    mags = 10 ** (p - 1 - np.floor(np.log10(a_positive)))
+    return np.round(a * mags) / mags
+
+
 def print_table(headers,
                 data,
                 datafmt='cols',
