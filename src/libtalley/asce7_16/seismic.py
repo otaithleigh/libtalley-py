@@ -75,10 +75,11 @@ def seismic_response_coeff(R, Ie, SDS, SD1, S1, T, T_L) -> float:
 
 
 class SiteSpecificParameters():
-    def __init__(self, pgauh, pgad, pga, fpga, pgam, ssrt, crs, ssuh, ssd, ss, fa,
-                 sms, sds, sdcs, s1rt, cr1, s1uh, s1d, s1, fv, sm1, sd1, sdc1, sdc,
-                 tl, cv, twoPeriodDesignSpectrum, twoPeriodMCErSpectrum,
-                 verticalDesignSpectrum, verticalMCErSpectrum):
+    def __init__(self, pgauh, pgad, pga, fpga, pgam, ssrt, crs, ssuh, ssd, ss,
+                 fa, sms, sds, sdcs, s1rt, cr1, s1uh, s1d, s1, fv, sm1, sd1,
+                 sdc1, sdc, tl, cv, twoPeriodDesignSpectrum,
+                 twoPeriodMCErSpectrum, verticalDesignSpectrum,
+                 verticalMCErSpectrum):
         self._pgauh: float = pgauh
         self._pgad: float = pgad
         self._pga: float = pga
@@ -279,7 +280,8 @@ class SiteSpecificParameters():
         T : float
             Building fundamental period (seconds)
         """
-        return seismic_response_coeff(R, 1.0, self.sds, self.sd1, self.s1, T, self.tl)
+        return seismic_response_coeff(R, 1.0, self.sds, self.sd1, self.s1, T,
+                                      self.tl)
 
     @classmethod
     def from_usgs(cls, latitude, longitude, risk_category, site_class):
@@ -310,7 +312,8 @@ class SiteSpecificParameters():
                 error_desc = json.loads(response.content)['response']
                 raise RuntimeError(f'Server returned error: {error_desc!r}')
             else:
-                raise RuntimeError(f'Server returned error code {response.status_code}')
+                raise RuntimeError(
+                    f'Server returned error code {response.status_code}')
 
         data = json.loads(response.content)['response']['data']
         for key in ['fpga_note', 'fv_note', 't-sub-l']:
