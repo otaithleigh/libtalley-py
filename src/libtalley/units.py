@@ -1,5 +1,8 @@
 import unyt
 
+if not hasattr(unyt, 'g0'):
+    unyt.define_unit('g0', unyt.standard_gravity, R'\rm{g_0}')
+
 
 def process_unit_input(in_, default_units=None, convert=False,
                        registry=None) -> unyt.unyt_array:
