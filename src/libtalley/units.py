@@ -56,3 +56,31 @@ def process_unit_input(in_, default_units=None, convert=False,
         q = q.reshape(1)[0]
 
     return q.to(default_units) if convert else q
+
+
+def convert(value, units, registry=None):
+    """Convert an input value to the given units, and return a bare quantity.
+
+    If the input value doesn't have units, assumes the input is in the requested
+    units already.
+
+    Parameters
+    ----------
+    value : array_like
+    units : str, unyt.Unit
+    registry : unyt.UnitRegistry, optional
+
+    Returns
+    -------
+    np.ndarray
+
+    Examples
+    --------
+    >>> convert(30, 's')
+    array(30.)
+    >>> convert(30*ft, 'm')
+    array(9.144)
+    >>> convert(([24, 36, 48], 'inch'), 'furlong')
+    array([0.0030303 , 0.00454545, 0.00606061])
+    """
+    return process_unit_input(value, units, convert=True, registry=registry).v
