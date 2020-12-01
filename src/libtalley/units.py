@@ -28,7 +28,7 @@ def process_unit_input(in_, default_units=None, convert=False,
         Convert all inputs to `default_units` (default: False)
     registry : unyt.UnitRegistry, optional
         Necessary if the desired units are not in the default unit registry.
-        Used to construct the returned unyt.unit_array object.
+        Used to construct the returned unyt.unyt_array object.
 
     Returns
     -------
