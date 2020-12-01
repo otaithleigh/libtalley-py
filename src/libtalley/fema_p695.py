@@ -9,7 +9,7 @@ from scipy.optimize import fsolve
 from scipy.interpolate import interp1d, interp2d
 
 from . import asce7_16
-
+from .units import convert
 
 __all__ = [
     'acmrxx',
@@ -172,7 +172,7 @@ def sf1(T, sdc):
 
     Ref: FEMA P695 Section
     """
-
+    T = convert(T, 's')
     if T <= _T_INTERP[0] or T >= _T_INTERP[-1]:
         raise ValueError(f"Period is out of range: T = {T}")
 
@@ -194,6 +194,7 @@ def smt(T, sdc):
     sdc : str
         Seismic design category
     """
+    T = convert(T, 's')
     SM1 = mapped_value("SM1", sdc)
     SMS = mapped_value("SMS", sdc)
     if T <= SM1/SMS:
@@ -258,7 +259,7 @@ def ssf(T, mu_t, sdc):
 
     Ref: FEMA P695 Section
     """
-
+    T = convert(T, 's')
     try:
         Z_SSF = _Z_SSF_DICT[sdc]
     except KeyError:
@@ -345,6 +346,7 @@ def seismic_response_coeff(R, T, sdc):
     ``mapped_values`` function, and for structures with periods of 4.0 s or
     lower. For a more general function, see ``asce7_16.seismic_response_coeff``.
     """
+    T = convert(T, 's')
     if T > 4.0:
         warnings.warn('seismic_response_coeff: Given period '
                       f'(T = {T} s) is out of FEMA P695 range')
