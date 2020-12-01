@@ -303,6 +303,32 @@ class SiteSpecificParameters():
         return seismic_response_coeff(R, 1.0, self.sds, self.sd1, self.s1, T,
                                       self.tl)
 
+    def design_spectral_acceleration(self, T):
+        """Calculate the design spectral acceleration Sa for a building at this
+        site.
+        
+        Parameters
+        ----------
+        T : float
+            Building fundamental period (seconds)
+        """
+        T = convert(T, 's')
+        Ts = self.sd1/self.sds
+        T0 = 0.2*Ts
+        Sa = np.piecewise(T, [
+            T < T0,
+            (T >= T0) & (T < Ts),
+            (T >= Ts) & (T < self.tl),
+            T >= self.tl,
+        ], [
+            lambda T: self.sds*(0.4 + 0.6*T/T0),
+            lambda T: self.sds,
+            lambda T: self.sd1/T,
+            lambda T: self.sd1*self.tl/T**2,
+        ])
+
+        return Sa
+
     @classmethod
     def from_usgs(cls, latitude, longitude, risk_category, site_class):
         """Get site-specific parameters from the USGS web service.
