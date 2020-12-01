@@ -49,4 +49,10 @@ def process_unit_input(in_, default_units=None, convert=False,
     else:
         q = unyt.unyt_array(in_, default_units, registry=registry)
 
+    # Convert scalar unyt_arrays to unyt_quantity. Done through reshaping and
+    # indexing to make sure we still have the unit registry. Is that necessary?
+    # Not sure!
+    if q.ndim == 0:
+        q = q.reshape(1)[0]
+
     return q.to(default_units) if convert else q
