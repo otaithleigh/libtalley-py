@@ -5,6 +5,8 @@ import json
 import numpy as np
 import requests
 
+from ..units import convert
+
 
 def approximate_period(hn: float, Ct: float, x: float) -> float:
     """Calculate the approximate fundamental period T_a (sec).
@@ -72,6 +74,24 @@ def seismic_response_coeff(R, Ie, SDS, SD1, S1, T, T_L) -> float:
 
     Cs = max(min(Cs_basic, Cs_max), Cs_min)
     return Cs
+
+
+def vertical_force_dist(w, h, T):
+    """Calculate the vertical force distribution factors C_v.
+
+    Parameters
+    ----------
+    w : array_like
+        Seismic weight at each story
+    h : array_like
+        Ground-to-level height for each story
+    T : float
+        Building fundamental period (sec)
+    """
+    T = convert(T, 's')
+    k = np.interp(T, [0.5, 2.5], [1, 2])
+    whk = np.asanyarray(w)*np.asanyarray(h)**k
+    return whk/whk.sum()
 
 
 class SiteSpecificParameters():
