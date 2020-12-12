@@ -84,3 +84,17 @@ def convert(value, units, registry=None):
     array([0.0030303 , 0.00454545, 0.00606061])
     """
     return process_unit_input(value, units, convert=True, registry=registry).v
+
+
+def get_unit_system(system):
+    """Retrieve the actual UnitSystem object from the unit systems registry.
+
+    Parameters
+    ----------
+    system : str
+        The name of the unit system to retrieve.
+    """
+    try:
+        return unyt.unit_systems.unit_system_registry[str(system)]
+    except KeyError as exc:
+        raise ValueError(f'{system!r} is not a valid unit system') from exc
