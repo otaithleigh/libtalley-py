@@ -20,7 +20,7 @@ requirements:
     - requests
     - scipy>=1.0.0
     - tabulate
-    - conda-forge::unyt>=2.8.0
+    - conda-forge::unyt>=2.0
 
 test:
   imports:
