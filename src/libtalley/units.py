@@ -1,9 +1,42 @@
+import logging
+
 import unyt
 
-if not hasattr(unyt, 'g0'):
-    unyt.define_unit('g0', unyt.standard_gravity, R'\rm{g_0}')
+logger = logging.getLogger(__name__)
 
 
+#===============================================================================
+# Units, dimensions, and unit systems
+#===============================================================================
+def _safe_define(symbol, *args, **kwargs):
+    # unyt occasionally adds new built-ins, and throws an error for already
+    # defined symbols. Check for existence before defining.
+    if not hasattr(unyt, symbol):
+        unyt.define_unit(symbol, *args, **kwargs)
+    else:
+        logger.info(f'Unit {symbol!r} is already defined.')
+
+
+# Acceleration
+_safe_define('g0', unyt.standard_gravity, tex_repr=R'\rm{g_0}')
+
+# Force
+_safe_define('kip', (1000.0, 'lbf'))
+
+# Mass
+_safe_define('blob', (1.0, 'lbf * s**2 / inch'))
+_safe_define('kblob', (1.0, 'kip * s**2 / inch'))
+_safe_define('kslug', (1.0, 'kip * s**2 / ft'))
+
+# Stress/pressure
+_safe_define('ksi', (1000.0, 'psi'))
+_safe_define('psf', (1.0, 'lbf / ft**2'))
+_safe_define('ksf', (1000.0, 'psf'))
+
+
+#===============================================================================
+# Utility functions
+#===============================================================================
 def process_unit_input(in_, default_units=None, convert=False,
                        registry=None) -> unyt.unyt_array:
     """Process an input value that may or may not have units.
