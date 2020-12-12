@@ -33,6 +33,26 @@ _safe_define('ksi', (1000.0, 'psi'))
 _safe_define('psf', (1.0, 'lbf / ft**2'))
 _safe_define('ksf', (1000.0, 'psf'))
 
+#---------------------------------------
+# Dimensions
+#---------------------------------------
+unyt.dimensions.stress = unyt.dimensions.pressure
+unyt.dimensions.moment = unyt.dimensions.energy
+
+#---------------------------------------
+# US customary system
+#---------------------------------------
+uscs_system = unyt.UnitSystem(
+    'uscs',
+    length_unit='inch',
+    mass_unit='kblob',
+    time_unit='s',
+    registry=unyt.unit_registry.default_unit_registry,
+)
+uscs_system['force'] = 'kip'
+uscs_system['stress'] = 'ksi'
+uscs_system['moment'] = 'kip * inch'
+
 
 #===============================================================================
 # Utility functions
