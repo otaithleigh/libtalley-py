@@ -1,0 +1,24 @@
+version: '3'
+
+vars:
+  PACKAGE: libtalley
+
+tasks:
+  build:
+    deps: [build-pypi, build-conda]
+
+  build-pypi:
+    cmds:
+      - python setup.py sdist bdist_wheel
+
+  build-conda:
+    cmds:
+      - conda build -c defaults -c conda-forge --output-folder dist pkg
+
+  upload:
+    cmds:
+      - anaconda upload "dist/noarch/{{.PACKAGE}}-{{.VERSION}}-py_0.tar.bz2"
+      - twine upload "dist/{{.PACKAGE}}-{{.VERSION}}*"
+    vars:
+      VERSION:
+        sh: cat setup.cfg | grep '^\s*version' | sed 's/^\s*version\s*=\s*//'
