@@ -213,8 +213,8 @@ def pybox(text, width=80, wrap=True):
     return _PyBoxer.box(text, width=width, wrap=wrap)
 
 
-def latex_name(shape, frac='nicefrac', join='-'):
-    """Return LaTeX code for nicely typesetting a steel section name.
+def latex_name(shape, frac='nicefrac'):
+    R"""Return LaTeX code for nicely typesetting a steel section name.
 
     Assumes the "by" part of the section is represented by an 'X', and that
     compound fractions are separated by '-' (hyphen, not endash).
@@ -227,33 +227,42 @@ def latex_name(shape, frac='nicefrac', join='-'):
         Name of a steel section.
     frac : {'frac', 'tfrac', 'sfrac', 'nicefrac'}, optional
         The fraction macro to use. (default: 'nicefrac')
-    join : str, optional
-        The string that joins the integer and fractional parts of a compound
-        fraction (default: '-')
 
     Example
     -------
     >>> name = 'HSS3-1/2X3-1/2X3/16'
     >>> latex_name(name)
-    'HSS3-\\nicefrac{1}{2}$\\times$3-\\nicefrac{1}{2}$\\times$\\nicefrac{3}{16}'
+    'HSS3\\nicefrac{1}{2}\\(\\times\\)3\\nicefrac{1}{2}\\(\\times\\)\\nicefrac{3}{16}'
     """
     recognized_macros = ['frac', 'tfrac', 'sfrac', 'nicefrac']
     if frac not in recognized_macros:
         raise ValueError(f'Unrecognized fraction macro {frac!r}')
 
+    # Whether or not we need to be in math mode to use the specified macro.
+    math_mode = {
+        'frac': True,
+        'tfrac': True,
+        'sfrac': False,
+        'nicefrac': False,
+    }[frac]
+
     def frac_to_nicefrac(f):
         """Return LaTeX code for a nicefrac from a fraction like '3/16'. Does
         not support compound fractions."""
         (numer, denom) = f.split('/')
-        return f"\\{frac}{{{numer}}}{{{denom}}}"
+        frac_code = R'\%s{%s}{%s}' % (frac, numer, denom)
+        if math_mode:
+            frac_code = R'\(' + frac_code + R'\)'
+        return frac_code
 
     shape_parts = shape.split('X')
     for [index, part] in enumerate(shape_parts):
         if '/' in part and '-' in part:  # need to activate compound fraction logic
             (integer, fraction) = part.split('-')
             newfraction = frac_to_nicefrac(fraction)
-            shape_parts[index] = integer + join + newfraction
+            shape_parts[index] = integer + newfraction
         elif '/' in part:  # need to activate fraction logic
             shape_parts[index] = frac_to_nicefrac(part)
 
-    return '$\\times$'.join(shape_parts)
+    latex_code = R'\(\times\)'.join(shape_parts)
+    return latex_code
