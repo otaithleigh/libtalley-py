@@ -139,7 +139,7 @@ def convert(value, units, registry=None):
     return process_unit_input(value, units, convert=True, registry=registry).v
 
 
-def get_unit_system(system):
+def get_unit_system(system) -> unyt.UnitSystem:
     """Retrieve the actual UnitSystem object from the unit systems registry.
 
     Parameters
