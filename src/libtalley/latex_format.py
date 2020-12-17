@@ -1,7 +1,7 @@
 """Functions that format strings into the appropriate LaTeX format."""
 
 
-def diff(f, x, n=1):
+def diff(f, x, n=1, partial=False):
     """Derivative representation.
     
     Parameters
@@ -12,14 +12,26 @@ def diff(f, x, n=1):
         variable to diff w.r.t.
     n:
         number of times to diff. (default: 1)
+    partial
+        Whether this is a partial derivative or not.
     """
-    differ = Rf"\mathrm{{d}}"
+    if partial:
+        differ = R'\partial'
+    else:
+        differ = Rf"\mathrm{{d}}"
     if n > 1:
         level = f"^{n}"
     else:
         level = ''
 
-    return Rf"\frac{{{differ}{level}{{{f}}}}}{{{differ}{{{x}}}{level}}}"
+    diff = '\\frac{%(differ)s%(level)s{%(f)s}}{%(differ)s{%(x)s}%(level)s}' % {
+        'differ': differ,
+        'level': level,
+        'f': f,
+        'x': x,
+    }
+
+    return diff
 
 
 def steel_shape_name(shape, frac='nicefrac'):
