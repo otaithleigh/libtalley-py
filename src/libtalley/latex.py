@@ -55,17 +55,16 @@ def steel_shape_name(shape, frac='nicefrac'):
     >>> steel_shape_name(name)
     'HSS3\\nicefrac{1}{2}\\(\\times\\)3\\nicefrac{1}{2}\\(\\times\\)\\nicefrac{3}{16}'
     """
-    recognized_macros = ['frac', 'tfrac', 'sfrac', 'nicefrac']
-    if frac not in recognized_macros:
-        raise ValueError(f'Unrecognized fraction macro {frac!r}')
-
     # Whether or not we need to be in math mode to use the specified macro.
-    math_mode = {
-        'frac': True,
-        'tfrac': True,
-        'sfrac': False,
-        'nicefrac': False,
-    }[frac]
+    try:
+        math_mode = {
+            'frac': True,
+            'tfrac': True,
+            'sfrac': False,
+            'nicefrac': False,
+        }[frac]
+    except KeyError as exc:
+        raise ValueError(f'Unrecognized fraction macro {frac!r}') from exc
 
     def frac_to_nicefrac(f):
         """Return LaTeX code for a nicefrac from a fraction like '3/16'. Does
