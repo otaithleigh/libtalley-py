@@ -75,13 +75,16 @@ def steel_shape_name(shape, frac='nicefrac'):
             frac_code = R'\(' + frac_code + R'\)'
         return frac_code
 
+    # Split the name into pieces, and deal with any fractions.
     shape_parts = shape.split('X')
     for [index, part] in enumerate(shape_parts):
-        if '/' in part and '-' in part:  # need to activate compound fraction logic
+        if '/' in part and '-' in part:
+            # Got a compound fraction
             (integer, fraction) = part.split('-')
             newfraction = frac_to_nicefrac(fraction)
             shape_parts[index] = integer + newfraction
-        elif '/' in part:  # need to activate fraction logic
+        elif '/' in part:
+            # Got a plain fraction
             shape_parts[index] = frac_to_nicefrac(part)
 
     latex_code = R'\(\times\)'.join(shape_parts)
