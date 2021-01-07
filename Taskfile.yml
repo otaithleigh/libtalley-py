@@ -22,3 +22,8 @@ tasks:
     vars:
       VERSION:
         sh: cat setup.cfg | grep '^\s*version' | sed 's/^\s*version\s*=\s*//'
+
+  clean:
+    cmds:
+      - rm -rf dist/* dist/.*
+      - rm -rf build/* build/.*
