@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import collections
-import numpy as np
+import functools
 import os
 import sys
 import typing
 
+import numpy as np
+import pandas as pd
 from tabulate import tabulate
 
 
@@ -56,6 +58,7 @@ def all_same_sign(iterable: typing.Iterable) -> bool:
     return v
 
 
+@functools.singledispatch
 def round_signif(a, p):
     """Round numeric array a to significant figures p.
 
@@ -72,6 +75,23 @@ def round_signif(a, p):
     a_positive = np.where(np.isfinite(a) & (a != 0), np.abs(a), 10**(p-1))
     mags = 10 ** (p - 1 - np.floor(np.log10(a_positive)))
     return np.round(a * mags) / mags
+
+
+@round_signif.register
+def _(df: pd.DataFrame, p):
+    return pd.DataFrame(
+        round_signif(df.to_numpy(), p),
+        columns=df.columns,
+        index=df.index,
+    )
+
+
+@round_signif.register
+def _(s: pd.Series, p):
+    return pd.Series(
+        round_signif(s.to_numpy(), p),
+        index=s.index,
+    )
 
 
 def print_table(headers,
