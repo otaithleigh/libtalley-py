@@ -161,7 +161,7 @@ def _load_materials_db(filename):
 # Shapes table
 #===============================================================================
 class ShapesTable():
-    def __init__(self, data: pd.DataFrame, units: pd.Series):
+    def __init__(self, data: pd.DataFrame, units: pd.Series, name: str = None):
         """
         Parameters
         ----------
@@ -169,9 +169,19 @@ class ShapesTable():
             Base data for the table.
         units : pd.Series
             Units for each (numeric) column in `data`.
+        name : str, optional
+            Name for this table.
         """
         self.data = data
         self.units = units
+        self.name = name
+
+    def __repr__(self):
+        clsname = f'{self.__class__.__module__}.{self.__class__.__name__}'
+        selfname = '' if self.name is None else f' {self.name!r}'
+        nshapes = len(self.data)
+
+        return f'<{clsname}{selfname} with {nshapes} shapes>'
 
     def get_prop(self, shape: str, prop: str):
         """Return a property from the table with units.
@@ -251,6 +261,7 @@ class ShapesTable():
     def from_file(cls,
                   file,
                   units,
+                  name=None,
                   true_values=TRUE_VALUES,
                   false_values=FALSE_VALUES,
                   na_values=NA_VALUES):
@@ -262,6 +273,8 @@ class ShapesTable():
             Name of the file to load.
         units : dict
             Dictionary of units, with keys corresponding to the column names.
+        name : str
+            Name to use for the created ShapesTable.
         true_values : list, optional
             List of values to convert to ``True``. (default: ['T'])
         false_values : list, optional
@@ -290,7 +303,7 @@ class ShapesTable():
         data.sort_index(inplace=True)
         units = pd.Series(units)
         units.sort_index(inplace=True)
-        return cls(data, units)
+        return cls(data, units, name=name)
 
 
 _SHAPES_US_FILE = 'aisc-shapes-database-v15-0-US.csv.bz2'
