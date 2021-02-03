@@ -285,10 +285,10 @@ class ShapesTable():
             List of values to convert to ``nan``. (default: ['–']) (note that
             this is an en-dash U+2013, not an ASCII hyphen U+002D)
         """
-        data = pd.read_csv(file,
-                           true_values=true_values,
-                           false_values=false_values,
-                           na_values=na_values)
+        data: pd.DataFrame = pd.read_csv(file,
+                                         true_values=true_values,
+                                         false_values=false_values,
+                                         na_values=na_values)
         data.index = pd.Index(data['AISC_Manual_Label'].str.casefold(), name='')
 
         # Convert fractions to floats
