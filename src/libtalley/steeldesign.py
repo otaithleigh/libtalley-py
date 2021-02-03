@@ -533,6 +533,8 @@ def property_lookup(shape, prop):
     prop : str
         Name of the property to look up.
     """
+    warnings.warn('Replace `property_lookup(shape, prop)` with '
+                  '`shapes_US.get_prop(shape, prop)`')
     return shapes_US.data.at[str(shape).casefold(), prop]
 
 
@@ -555,6 +557,8 @@ def lightest_shape(shape_list):
     >>> lightest_shape(['W14X82', 'HSS4X4X1/2'])
     'HSS4X4X1/2'
     """
+    warnings.warn('Replace `lightest_shape(shape_list)` with '
+                  '`shapes_US.lightest_shape(shape_list)`')
     return shapes_US.lightest_shape(shape_list)
 
 
