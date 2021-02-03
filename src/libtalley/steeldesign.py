@@ -533,7 +533,7 @@ def property_lookup(shape, prop):
     prop : str
         Name of the property to look up.
     """
-    return shapes_US.data.loc[shape][prop]
+    return shapes_US.data.at[str(shape).casefold(), prop]
 
 
 def lightest_shape(shape_list):
