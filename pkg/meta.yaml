@@ -28,11 +28,18 @@ test:
     - libtalley.asce7_16
     - libtalley.asce7_16.seismic
     - libtalley.fema_p695
-    - libtalley.latex_format
+    - libtalley.latex
     - libtalley.mutt
+    - libtalley.optotrak
     - libtalley.steeldesign
     - libtalley.text
     - libtalley.units
+  requires:
+    - pytest
+  source_files:
+    - tests
+  commands:
+    - pytest
 
 about:
   home: {{ data.get('url') }}
