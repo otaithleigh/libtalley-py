@@ -94,6 +94,46 @@ def vertical_force_dist(w, h, T):
     return whk/whk.sum()
 
 
+def design_response_spectrum(sds, sd1, tl):
+        """Generate a design response spectrum function.
+
+        Parameters
+        ----------
+        sds : float
+            Design spectral acceleration at short periods (g)
+        sd1 : float
+            Design spectral acceleration at T = 1 sec (g)
+        tl : float
+            Long-period transition period (sec)
+
+        Returns
+        -------
+        Sa(T: array_like) -> array_like
+
+        Example
+        -------
+        >>> Sa = design_response_spectrum(1.0, 0.60, )
+        """
+        Ts = sd1/sds
+        T0 = 0.2*Ts
+
+        def Sa(T):
+            T = convert(T, 's')
+            return np.piecewise(T, [
+                T < T0,
+                (T >= T0) & (T < Ts),
+                (T >= Ts) & (T < tl),
+                T >= tl,
+            ], [
+                lambda T: sds*(0.4 + 0.6*T/T0),
+                lambda T: sds,
+                lambda T: sd1/T,
+                lambda T: sd1*tl/T**2,
+            ])
+
+        return Sa
+
+
 class SiteSpecificParameters():
     def __init__(self, pgauh, pgad, pga, fpga, pgam, ssrt, crs, ssuh, ssd, ss,
                  fa, sms, sds, sdcs, s1rt, cr1, s1uh, s1d, s1, fv, sm1, sd1,
@@ -130,6 +170,7 @@ class SiteSpecificParameters():
         self._twoPeriodMCErSpectrum = np.asarray(twoPeriodMCErSpectrum)
         self._verticalDesignSpectrum = np.asarray(verticalDesignSpectrum)
         self._verticalMCErSpectrum = np.asarray(verticalMCErSpectrum)
+        self._Sa = design_response_spectrum(sds, sd1, tl)
 
     @property
     def pgauh(self):
@@ -312,22 +353,7 @@ class SiteSpecificParameters():
         T : float
             Building fundamental period (seconds)
         """
-        T = convert(T, 's')
-        Ts = self.sd1/self.sds
-        T0 = 0.2*Ts
-        Sa = np.piecewise(T, [
-            T < T0,
-            (T >= T0) & (T < Ts),
-            (T >= Ts) & (T < self.tl),
-            T >= self.tl,
-        ], [
-            lambda T: self.sds*(0.4 + 0.6*T/T0),
-            lambda T: self.sds,
-            lambda T: self.sd1/T,
-            lambda T: self.sd1*self.tl/T**2,
-        ])
-
-        return Sa
+        return self._Sa(T)
 
     @classmethod
     def from_usgs(cls, latitude, longitude, risk_category, site_class):
