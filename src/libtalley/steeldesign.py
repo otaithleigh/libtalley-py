@@ -640,8 +640,8 @@ def check_seismic_wtr_wide_flange(shape: str,
         material = SteelMaterial.from_name('A992')
     E_eFy = np.sqrt(material.E/material.eFy).to_value('dimensionless')
 
-    ht = property_lookup(shape, 'h/tw')
-    bt = property_lookup(shape, 'bf/2tf')
+    ht = shapes_US.get_prop(shape, 'h/tw').value
+    bt = shapes_US.get_prop(shape, 'bf/2tf').value
     ht_max, bt_max = wtr_max(E_eFy, Ca)
 
     return WtrResults(ht <= ht_max and bt <= bt_max, ht, ht_max, bt, bt_max)
