@@ -11,7 +11,7 @@ A collection of helpful functions, classes, and files.
 `libtalley.fema_p695`:
 - Helper functions for FEMA P695 studies. Ported from Mark Denavit's MATLAB code.
 
-`libtalley.latex_format`:
+`libtalley.latex`:
 - Functions that format strings into LaTeX representations.
 
 `libtalley.asce7_16`:
