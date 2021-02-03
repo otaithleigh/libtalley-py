@@ -647,7 +647,7 @@ def check_seismic_wtr_wide_flange(shape: str,
     return WtrResults(ht <= ht_max and bt <= bt_max, ht, ht_max, bt, bt_max)
 
 
-def _wtr_brace(E_eFy):
+def _wtr_brace(E_eFy, Ca):
     """Maximum width-to-thickness ratio for a brace."""
     ht_max = 1.57*E_eFy
     bt_max = ht_max
