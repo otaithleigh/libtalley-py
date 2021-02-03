@@ -257,7 +257,8 @@ class ShapesTable():
         >>> lightest_shape(['W14X82', 'HSS4X4X1/2'])
         'HSS4X4X1/2'
         """
-        return self.data.loc[pd.Series(shape_list).str.casefold()].W.idxmin()
+        index = self.data.loc[pd.Series(shape_list).str.casefold()].W.idxmin()
+        return self.data.at[index, 'AISC_Manual_Label']
 
     @classmethod
     def from_file(cls,
