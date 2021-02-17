@@ -10,11 +10,11 @@ logger = logging.getLogger(__name__)
 #===============================================================================
 def _safe_define(symbol, *args, **kwargs):
     # unyt occasionally adds new built-ins, and throws an error for already
-    # defined symbols. Check for existence before defining.
-    if not hasattr(unyt, symbol):
+    # defined symbols. Log the error and keep going.
+    try:
         unyt.define_unit(symbol, *args, **kwargs)
-    else:
-        logger.info(f'Unit {symbol!r} is already defined.')
+    except RuntimeError as exc:
+        logger.info(exc)
 
 
 # Acceleration
