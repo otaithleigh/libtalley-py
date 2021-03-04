@@ -5,6 +5,9 @@ vars:
   CONDA:
     # Use mamba if available
     sh: if ! command -v mamba &> /dev/null; then echo conda; else echo mamba; fi
+  CONDABUILD:
+    # Use mambabuild if boa is installed
+    sh: if [ -z "$(conda list | grep boa)" ]; then echo build; else echo mambabuild; fi
   DEVDEPS: anaconda-client twine 
 
 tasks:
@@ -25,7 +28,7 @@ tasks:
   build-conda:
     desc: Build the Conda package.
     cmds:
-      - conda build -c defaults -c conda-forge --output-folder dist pkg
+      - conda {{.CONDABUILD}} -c defaults -c conda-forge --output-folder dist pkg
 
   upload:
     desc: Upload packages to PyPi and anaconda.org.
