@@ -41,7 +41,7 @@ tasks:
       - twine upload "dist/{{.PACKAGE}}-{{.VERSION}}*"
     vars:
       VERSION:
-        sh: cat "src/libtalley/__version__"
+        sh: cat "src/{{.PACKAGE}}/__version__"
 
   clean:
     desc: Remove all build artifacts.
