@@ -28,7 +28,9 @@ tasks:
   build-conda:
     desc: Build the Conda package.
     cmds:
-      - conda {{.CONDABUILD}} -c defaults -c conda-forge --output-folder dist pkg
+      - conda {{.CONDABUILD}} {{.CHANNELS}} --output-folder dist pkg
+    vars:
+      CHANNELS: "-c defaults -c conda-forge"
 
   upload:
     desc: Upload packages to PyPi and anaconda.org.
