@@ -1,0 +1,1 @@
+from libtalley import latex

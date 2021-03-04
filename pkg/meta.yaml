@@ -23,17 +23,6 @@ requirements:
     - conda-forge::unyt>=2.0
 
 test:
-  imports:
-    - libtalley
-    - libtalley.asce7_16
-    - libtalley.asce7_16.seismic
-    - libtalley.fema_p695
-    - libtalley.latex
-    - libtalley.mutt
-    - libtalley.optotrak
-    - libtalley.steeldesign
-    - libtalley.text
-    - libtalley.units
   requires:
     - pytest
   source_files:
