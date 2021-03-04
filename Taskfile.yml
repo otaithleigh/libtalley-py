@@ -5,17 +5,21 @@ vars:
 
 tasks:
   build:
+    desc: Build all distribution packages.
     deps: [build-pypi, build-conda]
 
   build-pypi:
+    desc: Build the PyPi package.
     cmds:
       - python setup.py sdist bdist_wheel
 
   build-conda:
+    desc: Build the Conda package.
     cmds:
       - conda build -c defaults -c conda-forge --output-folder dist pkg
 
   upload:
+    desc: Upload packages to PyPi and anaconda.org.
     cmds:
       - anaconda upload "dist/noarch/{{.PACKAGE}}-{{.VERSION}}-py_0.tar.bz2"
       - twine upload "dist/{{.PACKAGE}}-{{.VERSION}}*"
@@ -24,6 +28,7 @@ tasks:
         sh: cat setup.cfg | grep '^\s*version' | sed 's/^\s*version\s*=\s*//'
 
   clean:
+    desc: Remove all build artifacts.
     cmds:
       - rm -rf dist/* dist/.*
       - rm -rf build/* build/.*
