@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import collections
 import functools
+import importlib.resources
 import os
 import sys
 import typing
@@ -11,6 +12,8 @@ import typing
 import numpy as np
 import pandas as pd
 from tabulate import tabulate
+
+__version__ = importlib.resources.read_text(__name__, '__version__')
 
 
 def is_even(val):
