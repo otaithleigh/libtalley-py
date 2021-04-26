@@ -185,11 +185,16 @@ def convert(value, units, registry=None):
 def get_unit_system(system: str) -> unyt.UnitSystem:
     """Retrieve the actual UnitSystem object from the unit systems registry.
 
+    If passed a UnitSystem object, the object is returned unchanged.
+
     Parameters
     ----------
     system : str
         The name of the unit system to retrieve.
     """
+    if isinstance(system, unyt.UnitSystem):
+        return system
+
     try:
         return unyt.unit_systems.unit_system_registry[str(system)]
     except KeyError as exc:
