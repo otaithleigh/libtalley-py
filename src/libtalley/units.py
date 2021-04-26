@@ -1,15 +1,22 @@
 import logging
+import typing as t
 
 import unyt
 from unyt.exceptions import UnitConversionError
 
 logger = logging.getLogger(__name__)
 
+#===============================================================================
+# Typing
+#===============================================================================
+UnitLike = t.Union[str, unyt.Unit]
+SystemLike = t.Union[str, unyt.UnitSystem]
+
 
 #===============================================================================
 # Units, dimensions, and unit systems
 #===============================================================================
-def _safe_define(symbol, *args, **kwargs):
+def _safe_define(symbol: str, *args, **kwargs):
     # unyt occasionally adds new built-ins, and throws an error for already
     # defined symbols. Log the error and keep going.
     try:
@@ -59,10 +66,10 @@ uscs_system['moment'] = 'kip * inch'
 # Utility functions
 #===============================================================================
 def process_unit_input(in_,
-                       default_units=None,
-                       convert=False,
-                       check_dims=False,
-                       registry=None) -> unyt.unyt_array:
+                       default_units: UnitLike = None,
+                       convert: bool = False,
+                       check_dims: bool = False,
+                       registry: unyt.UnitRegistry = None) -> unyt.unyt_array:
     """Process an input value that may or may not have units.
 
     If the input value doesn't have units, assumes the input is in the requested
@@ -154,7 +161,7 @@ def _check_dimensions(a, b):
         raise UnitConversionError(units_a, dim_a, units_b, dim_b)
 
 
-def convert(value, units, registry=None):
+def convert(value, units: UnitLike, registry: unyt.UnitRegistry = None):
     """Convert an input value to the given units, and return a bare quantity.
 
     If the input value doesn't have units, assumes the input is in the requested
@@ -182,7 +189,7 @@ def convert(value, units, registry=None):
     return process_unit_input(value, units, convert=True, registry=registry).v
 
 
-def get_unit_system(system: str) -> unyt.UnitSystem:
+def get_unit_system(system: SystemLike) -> unyt.UnitSystem:
     """Retrieve the actual UnitSystem object from the unit systems registry.
 
     If passed a UnitSystem object, the object is returned unchanged.
