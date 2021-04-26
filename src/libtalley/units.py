@@ -1,6 +1,7 @@
 import logging
 
 import unyt
+from unyt.exceptions import UnitConversionError
 
 logger = logging.getLogger(__name__)
 
@@ -57,9 +58,15 @@ uscs_system['moment'] = 'kip * inch'
 #===============================================================================
 # Utility functions
 #===============================================================================
-def process_unit_input(in_, default_units=None, convert=False,
+def process_unit_input(in_,
+                       default_units=None,
+                       convert=False,
+                       check_dims=False,
                        registry=None) -> unyt.unyt_array:
     """Process an input value that may or may not have units.
+
+    If the input value doesn't have units, assumes the input is in the requested
+    units already.
 
     Accepts the following input styles::
 
@@ -82,6 +89,9 @@ def process_unit_input(in_, default_units=None, convert=False,
         Default units to use if inputs don't have units associated already.
     convert : bool, optional
         Convert all inputs to `default_units` (default: False)
+    check_dims : bool, optional
+        If True, ensures that input has units compatible with `default_units`,
+        but does not convert the input.
     registry : unyt.UnitRegistry, optional
         Necessary if the desired units are not in the default unit registry.
         Used to construct the returned unyt.unyt_array object.
@@ -89,7 +99,18 @@ def process_unit_input(in_, default_units=None, convert=False,
     Returns
     -------
     q : unyt.unyt_array
+
+    Raises
+    ------
+    ValueError
+        If `in_` is a tuple with length != 2.
+    unyt.exceptions.UnitConversionError
+        If the units of `in_` are not compatible with `default_units`, and
+        either `convert` or `check_dims` are true.
     """
+    if default_units is not None:
+        default_units = unyt.Unit(default_units, registry=registry)
+
     if isinstance(in_, unyt.unyt_array):
         q = in_
     elif isinstance(in_, tuple):
@@ -102,6 +123,10 @@ def process_unit_input(in_, default_units=None, convert=False,
     else:
         q = unyt.unyt_array(in_, default_units, registry=registry)
 
+    # Skip if convert is True, since the same check will happen there internally
+    if check_dims and not convert:
+        _check_dimensions(q, default_units)
+
     # Convert scalar unyt_arrays to unyt_quantity. Done through reshaping and
     # indexing to make sure we still have the unit registry. Is that necessary?
     # Not sure!
@@ -109,6 +134,24 @@ def process_unit_input(in_, default_units=None, convert=False,
         q = q.reshape(1)[0]
 
     return q.to(default_units) if convert else q
+
+
+def _get_units(q) -> unyt.Unit:
+    """Get the units of an object."""
+    try:
+        units = q.units
+    except AttributeError:
+        units = unyt.dimensionless
+    return units
+
+
+def _check_dimensions(a, b):
+    units_a = _get_units(a)
+    units_b = _get_units(b)
+    dim_a = units_a.dimensions
+    dim_b = units_b.dimensions
+    if dim_a != dim_b:
+        raise UnitConversionError(units_a, dim_a, units_b, dim_b)
 
 
 def convert(value, units, registry=None):
