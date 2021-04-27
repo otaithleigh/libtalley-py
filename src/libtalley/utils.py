@@ -10,7 +10,7 @@ from tabulate import tabulate
 
 __all__ = [
     'all_same_sign',
-    'filename_no_ext',
+    'filename_noext',
     'is_even',
     'print_table',
     'recursive_update',
