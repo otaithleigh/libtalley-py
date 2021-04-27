@@ -108,6 +108,9 @@ class UnitInputParser():
             units = unyt.Unit(units, registry=self.registry)
         self._default_units = units
 
+    def __call__(self, in_) -> unyt.unyt_array:
+        return self.parse(in_)
+
     @singledispatchmethod
     def parse(self, in_) -> unyt.unyt_array:
         """Parse the given input expression.
