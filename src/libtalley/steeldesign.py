@@ -56,15 +56,15 @@ class SteelMaterial():
     Rt: float
 
     def __post_init__(self):
-        self.E = units.process_unit_input(self.E, default_units='ksi')
-        self.Fy = units.process_unit_input(self.Fy, default_units='ksi')
-        self.Fu = units.process_unit_input(self.Fu, default_units='ksi')
-        self.Ry = units.process_unit_input(self.Ry,
-                                           default_units='dimensionless',
-                                           convert=True).item()
-        self.Rt = units.process_unit_input(self.Rt,
-                                           default_units='dimensionless',
-                                           convert=True).item()
+        get_stress = units.UnitInputParser(default_units='ksi')
+        get_factor = units.UnitInputParser(default_units='', convert=True)
+
+        self.E = get_stress(self.E)
+        self.Fy = get_stress(self.Fy)
+        self.Fu = get_stress(self.Fu)
+        self.Ry = get_factor(self.Ry).item()
+        self.Rt = get_factor(self.Rt).item()
+
         if self.Fy > self.Fu:
             raise SteelError('SteelMaterial: yield strength must'
                              ' be less than tensile strength')
