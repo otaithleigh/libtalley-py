@@ -123,7 +123,6 @@ class UnitInputParser():
     def __call__(self, in_, units: UnitLike = None) -> unyt.unyt_array:
         return self.parse(in_, units)
 
-    @singledispatchmethod
     def parse(self, in_, units: UnitLike = None) -> unyt.unyt_array:
         """Parse the given input expression.
 
@@ -157,30 +156,7 @@ class UnitInputParser():
         else:
             units = self._parse_unit_expression(units)
 
-        if units is None:
-            raise ValueError('No default units set; cannot parse object '
-                             f'without units {in_!r}')
-
-        return self._post_process(
-            unyt.unyt_array(in_, units, registry=self.registry), units)
-
-    @parse.register
-    def _(self, in_: unyt.unyt_array, units: UnitLike = None):
-        return self._post_process(in_, units)
-
-    @parse.register
-    def _(self, in_: tuple, units: UnitLike = None):
-        if len(in_) != 2:
-            raise ValueError(f'Input tuple must have 2 items (got {len(in_)})')
-
-        return self._post_process(unyt.unyt_array(*in_, registry=self.registry),
-                                  units)
-
-    def _post_process(self,
-                      q: unyt.unyt_array,
-                      units: UnitLike = None) -> unyt.unyt_array:
-        if units is None:
-            units = self.default_units
+        q = self._parse_internal(in_, units)
 
         # Convert scalar unyt_arrays to unyt_quantity. Done through reshaping
         # and indexing to make sure we still have the unit registry.
@@ -197,6 +173,25 @@ class UnitInputParser():
                 q = q.to(units)
 
         return q
+
+    @singledispatchmethod
+    def _parse_internal(self, in_, units=None) -> unyt.unyt_array:
+        if units is None:
+            raise ValueError('No default units set; cannot parse object '
+                             f'without units {in_!r}')
+
+        return unyt.unyt_array(in_, units, registry=self.registry)
+
+    @_parse_internal.register
+    def _(self, in_: unyt.unyt_array, units=None):
+        return in_
+
+    @_parse_internal.register
+    def _(self, in_: tuple, units=None):
+        if len(in_) != 2:
+            raise ValueError(f'Input tuple must have 2 items (got {len(in_)})')
+
+        return unyt.unyt_array(*in_, registry=self.registry)
 
 
 def process_unit_input(in_,
