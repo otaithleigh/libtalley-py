@@ -107,9 +107,18 @@ class UnitInputParser():
 
     @default_units.setter
     def default_units(self, units):
+        self._default_units = self._parse_unit_expression(units)
+
+    def _parse_unit_expression(self, units) -> t.Optional[unyt.Unit]:
+        """Parse the given units expression to a Unit object, using the provided
+        unit registry.
+
+        None is passed through to represent missing units, as opposed to
+        explicit unitlessness.
+        """
         if units is not None:
             units = unyt.Unit(units, registry=self.registry)
-        self._default_units = units
+        return units
 
     def __call__(self, in_) -> unyt.unyt_array:
         return self.parse(in_)
@@ -145,6 +154,8 @@ class UnitInputParser():
         """
         if units is None:
             units = self.default_units
+        else:
+            units = self._parse_unit_expression(units)
 
         if units is None:
             raise ValueError('No default units set; cannot parse object '
