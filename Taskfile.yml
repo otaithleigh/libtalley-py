@@ -27,7 +27,13 @@ tasks:
   build-pypi:
     desc: Build the PyPi package.
     cmds:
-      - python setup.py sdist bdist_wheel
+      - rm -rf {{.BUILD_DIR}}
+      - git clone . {{.BUILD_DIR}}
+      - cd {{.BUILD_DIR}} && python setup.py sdist bdist_wheel
+      - mkdir -p dist
+      - mv -v "{{.BUILD_DIR}}/dist"/* dist
+    vars:
+      BUILD_DIR: "build/{{.PACKAGE}}-{{.VERSION}}-pypi"
 
   build-conda:
     desc: Build the Conda package.
