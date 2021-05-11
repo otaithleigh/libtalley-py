@@ -123,7 +123,7 @@ class UnitInputParser():
             in_ = 1000           ->  out = 1000*default_units
             in_ = (1000, 'psi')  ->  out = 1000*psi
             in_ = 1000*psi       ->  out = 1000*psi
-        
+
         Note that if no default units are set, inputs without units will raise
         a ValueError.
 
