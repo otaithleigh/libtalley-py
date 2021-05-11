@@ -150,6 +150,19 @@ class UnitInputParser():
             The input expression.
         units : optional
             Override value for `default_units`.
+
+        Returns
+        -------
+        q : unyt.unyt_array
+
+        Raises
+        ------
+        ValueError
+            - If `in_` is a tuple with length != 2.
+            - If `default_units` is None and input is received without units.
+        unyt.exceptions.UnitConversionError
+            If the units of `in_` are not compatible with `default_units`, and
+            either `convert` or `check_dims` are true.
         """
         if units is None:
             units = self.default_units
