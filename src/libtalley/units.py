@@ -120,8 +120,8 @@ class UnitInputParser():
             units = unyt.Unit(units, registry=self.registry)
         return units
 
-    def __call__(self, in_) -> unyt.unyt_array:
-        return self.parse(in_)
+    def __call__(self, in_, units: UnitLike = None) -> unyt.unyt_array:
+        return self.parse(in_, units)
 
     @singledispatchmethod
     def parse(self, in_, units: UnitLike = None) -> unyt.unyt_array:
