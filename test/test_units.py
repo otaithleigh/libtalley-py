@@ -4,7 +4,7 @@ from unyt.exceptions import UnitConversionError
 from unyt.testing import assert_allclose_units
 
 from libtalley import units
-from libtalley.units import get_unit_system, process_unit_input
+from libtalley.units import UnitInputParser, get_unit_system, process_unit_input
 
 
 def test_parse_units_no_default():
@@ -50,6 +50,19 @@ def test_parse_units_already_unyt():
     in_ = unyt.unyt_array([1, 2, 3, 4], 'ft')
     out_ = process_unit_input(in_)
     assert in_ is out_
+
+
+def test_parse_units_override_default():
+    parser = UnitInputParser()
+    desired = unyt.unyt_array([12, 24, 36, 48], 'inch')
+    actual = parser.parse([12, 24, 36, 48], 'inch')
+    assert_allclose_units(actual, desired)
+
+
+def test_parse_units_override_default_check_dims_fail():
+    parser = UnitInputParser(check_dims=True)
+    with pytest.raises(UnitConversionError):
+        parser.parse((30, 'kip'), 'ksf')
 
 
 def test_system_get():
