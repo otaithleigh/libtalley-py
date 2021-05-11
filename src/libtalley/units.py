@@ -67,29 +67,31 @@ uscs_system['moment'] = 'kip * inch'
 # Utility functions
 #===============================================================================
 class UnitInputParser():
-    """
-    Parameters
-    ----------
-    default_units : str, unyt.Unit, optional
-        Default units to use if inputs don't have units associated already. If
-        None, inputs that don't have units will raise an error. Use '' or
-        'dimensionless' for explicitly unitless quantities. (default: None)
-    convert : bool, optional
-        Convert all inputs to `default_units`. Has no effect if `default_units`
-        is None. (default: False)
-    check_dims : bool, optional
-        If True, ensures that input has units compatible with `default_units`,
-        but does not convert the input. Has no effect if `default_units` is
-        None or `convert` is True. (default: False)
-    registry : unyt.UnitRegistry, optional
-        Registry used to construct new unyt_array instances. Necessary if the
-        desired units are not in the default unit registry. (default: None)
-    """
+    """Parse inputs that may or may not have units."""
     def __init__(self,
                  default_units: UnitLike = None,
                  convert: bool = False,
                  check_dims: bool = False,
                  registry: unyt.UnitRegistry = None):
+        """
+        Parameters
+        ----------
+        default_units : str, unyt.Unit, optional
+            Default units to use if inputs don't have units associated already.
+            If None, inputs that don't have units will raise an error. Use '' or
+            'dimensionless' for explicitly unitless quantities. (default: None)
+        convert : bool, optional
+            Convert all inputs to `default_units`. Has no effect if
+            `default_units` is None. (default: False)
+        check_dims : bool, optional
+            If True, ensures that input has units compatible with
+            `default_units`, but does not convert the input. Has no effect if
+            `default_units` is None or `convert` is True. (default: False)
+        registry : unyt.UnitRegistry, optional
+            Registry used to construct new unyt_array instances. Necessary if
+            the desired units are not in the default unit registry. (default:
+            None)
+        """
         self.registry = registry
         self.default_units = default_units
         self.convert = convert
