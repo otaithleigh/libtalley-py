@@ -72,14 +72,15 @@ class UnitInputParser():
     ----------
     default_units : str, unyt.Unit, optional
         Default units to use if inputs don't have units associated already. If
-        None, inputs that don't have units will raise an error. (default: None)
+        None, inputs that don't have units will raise an error. Use '' or
+        'dimensionless' for explicitly unitless quantities. (default: None)
     convert : bool, optional
         Convert all inputs to `default_units`. Has no effect if `default_units`
         is None. (default: False)
     check_dims : bool, optional
         If True, ensures that input has units compatible with `default_units`,
         but does not convert the input. Has no effect if `default_units` is
-        None. (default: False)
+        None or `convert` is True. (default: False)
     registry : unyt.UnitRegistry, optional
         Registry used to construct new unyt_array instances. Necessary if the
         desired units are not in the default unit registry. (default: None)
@@ -200,14 +201,15 @@ def process_unit_input(in_,
         Input values.
     default_units : str, unyt.Unit, optional
         Default units to use if inputs don't have units associated already. If
-        None, inputs that don't have units will raise an error. (default: None)
+        None, inputs that don't have units will raise an error. Use '' or
+        'dimensionless' for explicitly unitless quantities. (default: None)
     convert : bool, optional
         Convert all inputs to `default_units`. Has no effect if `default_units`
         is None. (default: False)
     check_dims : bool, optional
         If True, ensures that input has units compatible with `default_units`,
         but does not convert the input. Has no effect if `default_units` is
-        None. (default: False)
+        None or `convert` is True. (default: False)
     registry : unyt.UnitRegistry, optional
         Necessary if the desired units are not in the default unit registry.
         Used to construct the returned unyt.unyt_array object.
@@ -219,7 +221,8 @@ def process_unit_input(in_,
     Raises
     ------
     ValueError
-        If `in_` is a tuple with length != 2.
+        - If `in_` is a tuple with length != 2.
+        - If `default_units` is None and input is received without units.
     unyt.exceptions.UnitConversionError
         If the units of `in_` are not compatible with `default_units`, and
         either `convert` or `check_dims` are true.
