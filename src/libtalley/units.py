@@ -113,7 +113,7 @@ class UnitInputParser():
         return self.parse(in_)
 
     @singledispatchmethod
-    def parse(self, in_) -> unyt.unyt_array:
+    def parse(self, in_, units: UnitLike = None) -> unyt.unyt_array:
         """Parse the given input expression.
 
         Accepts the following input styles::
@@ -133,41 +133,55 @@ class UnitInputParser():
             in_ = 1000*psi       ->  out_ = (1000*psi).to(default_units)
 
         If no default units are set, `convert` has no effect.
+
+        Parameters
+        ----------
+        in_
+            The input expression.
+        units : optional
+            Override value for `default_units`.
         """
-        if self.default_units is None:
+        if units is None:
+            units = self.default_units
+
+        if units is None:
             raise ValueError('No default units set; cannot parse object '
                              f'without units {in_!r}')
 
         return self._post_process(
-            unyt.unyt_array(in_, self.default_units, registry=self.registry))
+            unyt.unyt_array(in_, units, registry=self.registry), units)
 
     @parse.register
-    def _(self, in_: unyt.unyt_array):
-        return self._post_process(in_)
+    def _(self, in_: unyt.unyt_array, units: UnitLike = None):
+        return self._post_process(in_, units)
 
     @parse.register
-    def _(self, in_: tuple):
+    def _(self, in_: tuple, units: UnitLike = None):
         if len(in_) != 2:
             raise ValueError(f'Input tuple must have 2 items (got {len(in_)})')
 
-        value, units = in_
-        return self._post_process(
-            unyt.unyt_array(value, units, registry=self.registry))
+        return self._post_process(unyt.unyt_array(*in_, registry=self.registry),
+                                  units)
 
-    def _post_process(self, q: unyt.unyt_array) -> unyt.unyt_array:
+    def _post_process(self,
+                      q: unyt.unyt_array,
+                      units: UnitLike = None) -> unyt.unyt_array:
+        if units is None:
+            units = self.default_units
+
         # Convert scalar unyt_arrays to unyt_quantity. Done through reshaping
         # and indexing to make sure we still have the unit registry.
         if q.ndim == 0:
             q = q.reshape(1)[0]
 
-        if self.default_units is not None:
+        if units is not None:
             # Skip dims check if convert is True, since the same check will
             # happen internally inside unyt.
             if self.check_dims and not self.convert:
-                _check_dimensions(q, self.default_units)
+                _check_dimensions(q, units)
 
             if self.convert:
-                q = q.to(self.default_units)
+                q = q.to(units)
 
         return q
 
