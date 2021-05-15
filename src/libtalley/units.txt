@@ -1,0 +1,8 @@
+pound_force_per_square_foot = lbf / ft**2 = psf = pounds_force_per_square_foot
+kip_per_square_foot = kip / ft**2 = ksf = kips_per_square_foot
+
+@system uscs using USCSLengthInternational, AvoirdupoisUS
+    inch
+    kiloblob
+    second
+@end

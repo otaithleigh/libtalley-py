@@ -1,66 +1,27 @@
-import logging
+import importlib.resources
 import typing as t
 from functools import singledispatchmethod
 
-import unyt
-from unyt.exceptions import UnitConversionError
-
-logger = logging.getLogger(__name__)
+import pint
 
 #===============================================================================
 # Typing
 #===============================================================================
-UnitLike = t.Union[str, unyt.Unit]
-SystemLike = t.Union[str, unyt.UnitSystem]
-
+UnitLike = t.Union[str, pint.Unit]
 
 #===============================================================================
-# Units, dimensions, and unit systems
+# Unit registry
 #===============================================================================
-def _safe_define(symbol: str, *args, **kwargs):
-    # unyt occasionally adds new built-ins, and throws an error for already
-    # defined symbols. Log the error and keep going.
-    try:
-        unyt.define_unit(symbol, *args, **kwargs)
-    except RuntimeError as exc:
-        logger.info(exc)
+ureg = pint.UnitRegistry()
+pint.set_application_registry(ureg)
 
+with importlib.resources.path('libtalley', 'units.txt') as p:
+    ureg.load_definitions(str(p))
 
-# Acceleration
-_safe_define('g0', unyt.standard_gravity, tex_repr=R'\rm{g_0}')
+ureg.default_format = '~P'
+ureg.default_system = 'uscs'
 
-# Force
-_safe_define('kip', (1000.0, 'lbf'))
-
-# Mass
-_safe_define('blob', (1.0, 'lbf * s**2 / inch'))
-_safe_define('kblob', (1.0, 'kip * s**2 / inch'))
-_safe_define('kslug', (1.0, 'kip * s**2 / ft'))
-
-# Stress/pressure
-_safe_define('ksi', (1000.0, 'psi'))
-_safe_define('psf', (1.0, 'lbf / ft**2'))
-_safe_define('ksf', (1000.0, 'psf'))
-
-#---------------------------------------
-# Dimensions
-#---------------------------------------
-unyt.dimensions.stress = unyt.dimensions.pressure
-unyt.dimensions.moment = unyt.dimensions.energy
-
-#---------------------------------------
-# US customary system
-#---------------------------------------
-uscs_system = unyt.UnitSystem(
-    'uscs',
-    length_unit='inch',
-    mass_unit='kblob',
-    time_unit='s',
-    registry=unyt.unit_registry.default_unit_registry,
-)
-uscs_system['force'] = 'kip'
-uscs_system['stress'] = 'ksi'
-uscs_system['moment'] = 'kip * inch'
+Quantity = ureg.Quantity
 
 
 #===============================================================================
@@ -72,11 +33,11 @@ class UnitInputParser():
                  default_units: UnitLike = None,
                  convert: bool = False,
                  check_dims: bool = False,
-                 registry: unyt.UnitRegistry = None):
+                 registry: pint.UnitRegistry = None):
         """
         Parameters
         ----------
-        default_units : str, unyt.Unit, optional
+        default_units : str, pint.Unit, optional
             Default units to use if inputs don't have units associated already.
             If None, inputs that don't have units will raise an error. Use '' or
             'dimensionless' for explicitly unitless quantities. (default: None)
@@ -87,18 +48,21 @@ class UnitInputParser():
             If True, ensures that input has units compatible with
             `default_units`, but does not convert the input. Has no effect if
             `default_units` is None or `convert` is True. (default: False)
-        registry : unyt.UnitRegistry, optional
-            Registry used to construct new unyt_array instances. Necessary if
+        registry : pint.UnitRegistry, optional
+            Registry used to construct new Quantity instances. Necessary if
             the desired units are not in the default unit registry. (default:
             None)
         """
+        if registry is None:
+            registry = ureg
+
         self.registry = registry
         self.default_units = default_units
         self.convert = convert
         self.check_dims = check_dims
 
     @property
-    def default_units(self) -> t.Union[unyt.Unit, None]:
+    def default_units(self) -> t.Union[pint.Unit, None]:
         """Default units to use if inputs don't have units associated already.
 
         If None, inputs that don't have units will raise an error.
@@ -109,7 +73,8 @@ class UnitInputParser():
     def default_units(self, units):
         self._default_units = self._parse_unit_expression(units)
 
-    def _parse_unit_expression(self, units) -> t.Optional[unyt.Unit]:
+    def _parse_unit_expression(self,
+                               units: t.Optional[str]) -> t.Optional[pint.Unit]:
         """Parse the given units expression to a Unit object, using the provided
         unit registry.
 
@@ -117,13 +82,13 @@ class UnitInputParser():
         explicit unitlessness.
         """
         if units is not None:
-            units = unyt.Unit(units, registry=self.registry)
+            units = self.registry.parse_units(units)
         return units
 
-    def __call__(self, in_, units: UnitLike = None) -> unyt.unyt_array:
+    def __call__(self, in_, units: UnitLike = None) -> pint.Quantity:
         return self.parse(in_, units)
 
-    def parse(self, in_, units: UnitLike = None) -> unyt.unyt_array:
+    def parse(self, in_, units: UnitLike = None) -> pint.Quantity:
         """Parse the given input expression.
 
         Accepts the following input styles::
@@ -131,6 +96,7 @@ class UnitInputParser():
             in_ = 1000           ->  out = 1000*default_units
             in_ = (1000, 'psi')  ->  out = 1000*psi
             in_ = 1000*psi       ->  out = 1000*psi
+            in_ = '1000 psi'     ->  out = 1000*psi
 
         Note that if no default units are set, inputs without units will raise
         a ValueError.
@@ -141,6 +107,7 @@ class UnitInputParser():
             in_ = 1000           ->  out_ = 1000*default_units
             in_ = (1000, 'psi')  ->  out_ = (1000*psi).to(default_units)
             in_ = 1000*psi       ->  out_ = (1000*psi).to(default_units)
+            in_ = '1000 psi'     ->  out_ = (1000*psi).to(default_units)
 
         If no default units are set, `convert` has no effect.
 
@@ -153,14 +120,14 @@ class UnitInputParser():
 
         Returns
         -------
-        q : unyt.unyt_array
+        q : pint.Quantity
 
         Raises
         ------
         ValueError
             - If `in_` is a tuple with length != 2.
             - If `default_units` is None and input is received without units.
-        unyt.exceptions.UnitConversionError
+        pint.DimensionalityError
             If the units of `in_` are not compatible with `default_units`, and
             either `convert` or `check_dims` are true.
         """
@@ -171,16 +138,11 @@ class UnitInputParser():
 
         q = self._parse_internal(in_, units)
 
-        # Convert scalar unyt_arrays to unyt_quantity. Done through reshaping
-        # and indexing to make sure we still have the unit registry.
-        if q.ndim == 0:
-            q = q.reshape(1)[0]
-
         if units is not None:
             # Skip dims check if convert is True, since the same check will
-            # happen internally inside unyt.
+            # happen internally before converting.
             if self.check_dims and not self.convert:
-                _check_dimensions(q, units)
+                self._check_dimensions(q, units)
 
             if self.convert:
                 q = q.to(units)
@@ -188,15 +150,19 @@ class UnitInputParser():
         return q
 
     @singledispatchmethod
-    def _parse_internal(self, in_, units=None) -> unyt.unyt_array:
+    def _parse_internal(self, in_, units=None) -> pint.Quantity:
         if units is None:
             raise ValueError('No default units set; cannot parse object '
                              f'without units {in_!r}')
 
-        return unyt.unyt_array(in_, units, registry=self.registry)
+        return self.registry.Quantity(in_, units)
 
     @_parse_internal.register
-    def _(self, in_: unyt.unyt_array, units=None):
+    def _(self, in_: str, units=None):
+        return self.registry.parse_expression(in_)
+
+    @_parse_internal.register
+    def _(self, in_: pint.Quantity, units=None):
         return in_
 
     @_parse_internal.register
@@ -204,14 +170,33 @@ class UnitInputParser():
         if len(in_) != 2:
             raise ValueError(f'Input tuple must have 2 items (got {len(in_)})')
 
-        return unyt.unyt_array(*in_, registry=self.registry)
+        return self.registry.Quantity(*in_)
+
+    def _get_units(self, q) -> pint.Unit:
+        """Get the units of an object."""
+        try:
+            units = q.units
+        except AttributeError:
+            if isinstance(q, pint.Unit):
+                units = q
+            else:
+                units = self.registry.dimensionless
+        return units
+
+    def _check_dimensions(self, a, b):
+        units_a = self._get_units(a)
+        units_b = self._get_units(b)
+        dims_a = units_a.dimensionality
+        dims_b = units_b.dimensionality
+        if dims_a != dims_b:
+            raise pint.DimensionalityError(units_a, units_b, dims_a, dims_b)
 
 
 def process_unit_input(in_,
                        default_units: UnitLike = None,
                        convert: bool = False,
                        check_dims: bool = False,
-                       registry: unyt.UnitRegistry = None) -> unyt.unyt_array:
+                       registry: pint.UnitRegistry = None) -> pint.Quantity:
     """Process an input value that may or may not have units.
 
     If the input value doesn't have units, assumes the input is in the requested
@@ -222,6 +207,10 @@ def process_unit_input(in_,
         in_ = 1000           ->  out_ = 1000*default_units
         in_ = (1000, 'psi')  ->  out_ = 1000*psi
         in_ = 1000*psi       ->  out_ = 1000*psi
+        in_ = '1000 psi'     ->  out_ = 1000*psi
+
+    Note that if no default units are set, inputs without units will raise
+    a ValueError.
 
     If `convert` is True, then values that come in with units are converted to
     `default_units` when returned::
@@ -234,7 +223,7 @@ def process_unit_input(in_,
     ----------
     in_
         Input values.
-    default_units : str, unyt.Unit, optional
+    default_units : str, pint.Unit, optional
         Default units to use if inputs don't have units associated already. If
         None, inputs that don't have units will raise an error. Use '' or
         'dimensionless' for explicitly unitless quantities. (default: None)
@@ -245,20 +234,20 @@ def process_unit_input(in_,
         If True, ensures that input has units compatible with `default_units`,
         but does not convert the input. Has no effect if `default_units` is
         None or `convert` is True. (default: False)
-    registry : unyt.UnitRegistry, optional
+    registry : pint.UnitRegistry, optional
         Necessary if the desired units are not in the default unit registry.
-        Used to construct the returned unyt.unyt_array object.
+        Used to construct the returned Quantity object.
 
     Returns
     -------
-    q : unyt.unyt_array
+    q : pint.Quantity
 
     Raises
     ------
     ValueError
         - If `in_` is a tuple with length != 2.
         - If `default_units` is None and input is received without units.
-    unyt.exceptions.UnitConversionError
+    pint.DimensionalityError
         If the units of `in_` are not compatible with `default_units`, and
         either `convert` or `check_dims` are true.
     """
@@ -269,25 +258,7 @@ def process_unit_input(in_,
     return parser.parse(in_)
 
 
-def _get_units(q) -> unyt.Unit:
-    """Get the units of an object."""
-    try:
-        units = q.units
-    except AttributeError:
-        units = unyt.dimensionless
-    return units
-
-
-def _check_dimensions(a, b):
-    units_a = _get_units(a)
-    units_b = _get_units(b)
-    dim_a = units_a.dimensions
-    dim_b = units_b.dimensions
-    if dim_a != dim_b:
-        raise UnitConversionError(units_a, dim_a, units_b, dim_b)
-
-
-def convert(value, units: UnitLike, registry: unyt.UnitRegistry = None):
+def convert(value, units: UnitLike, registry: pint.UnitRegistry = None):
     """Convert an input value to the given units, and return a bare quantity.
 
     If the input value doesn't have units, assumes the input is in the requested
@@ -296,8 +267,8 @@ def convert(value, units: UnitLike, registry: unyt.UnitRegistry = None):
     Parameters
     ----------
     value : array_like
-    units : str, unyt.Unit
-    registry : unyt.UnitRegistry, optional
+    units : str, pint.Unit
+    registry : pint.UnitRegistry, optional
 
     Returns
     -------
@@ -306,29 +277,10 @@ def convert(value, units: UnitLike, registry: unyt.UnitRegistry = None):
     Examples
     --------
     >>> convert(30, 's')
-    array(30.)
+    30
     >>> convert(30*ft, 'm')
-    array(9.144)
+    9.144
     >>> convert(([24, 36, 48], 'inch'), 'furlong')
     array([0.0030303 , 0.00454545, 0.00606061])
     """
-    return process_unit_input(value, units, convert=True, registry=registry).v
-
-
-def get_unit_system(system: SystemLike) -> unyt.UnitSystem:
-    """Retrieve the actual UnitSystem object from the unit systems registry.
-
-    If passed a UnitSystem object, the object is returned unchanged.
-
-    Parameters
-    ----------
-    system : str
-        The name of the unit system to retrieve.
-    """
-    if isinstance(system, unyt.UnitSystem):
-        return system
-
-    try:
-        return unyt.unit_systems.unit_system_registry[str(system)]
-    except KeyError as exc:
-        raise ValueError(f'{system!r} is not a valid unit system') from exc
+    return process_unit_input(value, units, convert=True, registry=registry).m
