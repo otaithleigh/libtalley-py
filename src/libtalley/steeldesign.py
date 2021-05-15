@@ -623,10 +623,8 @@ def check_seismic_wtr_wide_flange(shape: str,
     ---------
     AISC 341-16, Table D1.1 (pp. 9.1-14 -- 9.1-17)
     """
-    if isinstance(mem_type, MemberType):
-        mem_type: str = mem_type.value
-    if isinstance(level, Ductility):
-        level: str = level.value
+    mem_type = MemberType(mem_type)
+    level = Ductility(level)
     wtr_max = {
         ('BRACE', 'MODERATE'): _wtr_brace,
         ('BRACE', 'HIGH'): _wtr_brace,
@@ -634,7 +632,7 @@ def check_seismic_wtr_wide_flange(shape: str,
         ('COLUMN', 'HIGH'): _wtr_beam_column_high,
         ('BEAM', 'MODERATE'): _wtr_beam_column_moderate,
         ('BEAM', 'HIGH'): _wtr_beam_column_high,
-    }[mem_type, level]
+    }[mem_type.value, level.value]
 
     if material is None:
         material = SteelMaterial.from_name('A992')
