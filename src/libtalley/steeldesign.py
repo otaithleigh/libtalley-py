@@ -9,9 +9,9 @@ import warnings
 
 import numpy as np
 import pandas as pd
-import unyt
+import pint
 
-from . import units
+from .units import ureg, UnitInputParser
 
 #===============================================================================
 # Constants
@@ -37,11 +37,11 @@ class SteelMaterial():
     ----------
     name : str
         Name of the material.
-    E : float, unyt.unyt_array
+    E : float, pint.Quantity
         Elastic modulus. If units are not specified, assumed to be ksi.
-    Fy : float, unyt.unyt_array
+    Fy : float, pint.Quantity
         Design yield strength. If units are not specified, assumed to be ksi.
-    Fu : float, unyt.unyt_array
+    Fu : float, pint.Quantity
         Design tensile strength. If units are not specified, assumed to be ksi.
     Ry : float
         Expected yield strength factor. Dimensionless.
@@ -49,21 +49,21 @@ class SteelMaterial():
         Expected tensile strength factor. Dimensionless.
     """
     name: str
-    E: unyt.unyt_quantity
-    Fy: unyt.unyt_quantity
-    Fu: unyt.unyt_quantity
+    E: pint.Quantity
+    Fy: pint.Quantity
+    Fu: pint.Quantity
     Ry: float
     Rt: float
 
     def __post_init__(self):
-        get_stress = units.UnitInputParser(default_units='ksi')
-        get_factor = units.UnitInputParser(default_units='', convert=True)
+        get_stress = UnitInputParser(default_units='ksi')
+        get_factor = UnitInputParser(default_units='', convert=True)
 
         self.E = get_stress(self.E)
         self.Fy = get_stress(self.Fy)
         self.Fu = get_stress(self.Fu)
-        self.Ry = get_factor(self.Ry).item()
-        self.Rt = get_factor(self.Rt).item()
+        self.Ry = get_factor(self.Ry).magnitude
+        self.Rt = get_factor(self.Rt).magnitude
 
         if self.Fy > self.Fu:
             raise SteelError('SteelMaterial: yield strength must'
@@ -201,8 +201,8 @@ class ShapesTable():
 
         Returns
         -------
-        q : unyt.unyt_quantity
-            Value of the property with units.
+        q : pint.Quantity, Any
+            Value of the property, with units (if defined).
 
         Raises
         ------
@@ -215,9 +215,9 @@ class ShapesTable():
         if units is None:
             return value
         else:
-            return unyt.unyt_quantity(value, units)
+            return ureg.Quantity(value, units)
 
-    def get_shape(self, shape: str, include_units: bool = True):
+    def get_shape(self, shape: str, include_units: bool = True) -> pd.Series:
         """
         Parameters
         ----------
@@ -235,10 +235,10 @@ class ShapesTable():
             for prop, value in shape_data.items():
                 units = self.units.get(prop)
                 if units is not None:
-                    shape_data[prop] = unyt.unyt_quantity(value, units)
+                    shape_data[prop] = ureg.Quantity(value, units)
         return shape_data
 
-    def lightest_shape(self, shape_list):
+    def lightest_shape(self, shape_list) -> str:
         """Return the lightest shape (force/length) from the given list.
 
         Works across different shape series, e.g. comparing an HSS and W works
@@ -675,19 +675,19 @@ def _wtr_beam_column_high(E_eFy, Ca):
 
 
 class Capacity(NamedTuple):
-    tension: unyt.unyt_quantity
-    compression: unyt.unyt_quantity
-    postbuckling: unyt.unyt_quantity
+    tension: pint.Quantity
+    compression: pint.Quantity
+    postbuckling: pint.Quantity
 
 
-def brace_capacity(shape: str, length: unyt.unyt_quantity,
+def brace_capacity(shape: str, length: pint.Quantity,
                    material: SteelMaterial) -> Capacity:
     """
     Parameters
     ----------
     shape : str
         Steel shape of the brace.
-    length : unyt_quantity
+    length : pint.Quantity
         Unbraced length of the brace.
     material : SteelMaterial
         Brace material.
