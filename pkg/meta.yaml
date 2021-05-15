@@ -22,7 +22,7 @@ requirements:
     - requests
     - scipy>=1.0.0
     - tabulate
-    - conda-forge::unyt>=2.0
+    - conda-forge::pint>=0.17.0
 
 test:
   requires:

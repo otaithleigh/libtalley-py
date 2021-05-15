@@ -9,7 +9,7 @@ dependencies:
   - requests
   - scipy >= 1.0.0
   - tabulate
-  - unyt >= 2.8.0
+  - pint >= 0.17.0
   # Development
   - pylint
   - yapf
