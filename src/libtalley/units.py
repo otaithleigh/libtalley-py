@@ -107,6 +107,9 @@ class UnitInputParser():
         self.check_dims = check_dims
         self.copy = copy
 
+    #===========================================================================
+    # Units handling
+    #===========================================================================
     @property
     def default_units(self) -> t.Union[unyt.Unit, None]:
         """Default units to use if inputs don't have units associated already.
@@ -130,6 +133,31 @@ class UnitInputParser():
             units = unyt.Unit(units, registry=self.registry)
         return units
 
+    #===========================================================================
+    # Dims checking
+    #===========================================================================
+    def _get_units(self, q) -> unyt.Unit:
+        """Get the units of an object."""
+        try:
+            units = q.units
+        except AttributeError:
+            units = unyt.dimensionless
+        return unyt.Unit(units, registry=self.registry)
+
+    def _check_dimensions(self, a, b):
+        """Check that a and b have the same dimensions, and raise an error if
+        they do not.
+        """
+        units_a = self._get_units(a)
+        units_b = self._get_units(b)
+        dim_a = units_a.dimensions
+        dim_b = units_b.dimensions
+        if dim_a != dim_b:
+            raise UnitConversionError(units_a, dim_a, units_b, dim_b)
+
+    #===========================================================================
+    # Parsing
+    #===========================================================================
     def __call__(self, in_, units: t.Optional[UnitLike] = None):
         return self.parse(in_, units)
 
@@ -229,30 +257,12 @@ class UnitInputParser():
         return unyt_array(*in_, registry=self.registry)
 
     if xr is not None:
+
         @_parse_internal.register
         def _(self, in_: xr.DataArray, units=None):
             value = in_.values
             units = in_.attrs.get('units', units)
             return self._parse_internal(value, units)
-
-    def _get_units(self, q) -> unyt.Unit:
-        """Get the units of an object."""
-        try:
-            units = q.units
-        except AttributeError:
-            units = unyt.dimensionless
-        return unyt.Unit(units, registry=self.registry)
-
-    def _check_dimensions(self, a, b):
-        """Check that a and b have the same dimensions, and raise an error if
-        they do not.
-        """
-        units_a = self._get_units(a)
-        units_b = self._get_units(b)
-        dim_a = units_a.dimensions
-        dim_b = units_b.dimensions
-        if dim_a != dim_b:
-            raise UnitConversionError(units_a, dim_a, units_b, dim_b)
 
 
 def process_unit_input(in_,
