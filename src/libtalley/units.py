@@ -3,6 +3,7 @@ import typing as t
 from functools import singledispatchmethod
 
 import unyt
+from unyt import unyt_array
 from unyt.exceptions import UnitConversionError
 
 try:
@@ -129,10 +130,10 @@ class UnitInputParser():
             units = unyt.Unit(units, registry=self.registry)
         return units
 
-    def __call__(self, in_, units: UnitLike = None) -> unyt.unyt_array:
+    def __call__(self, in_, units: t.Optional[UnitLike] = None):
         return self.parse(in_, units)
 
-    def parse(self, in_, units: UnitLike = None) -> unyt.unyt_array:
+    def parse(self, in_, units: t.Optional[UnitLike] = None) -> unyt_array:
         """Parse the given input expression.
 
         Accepts the following input styles::
@@ -209,12 +210,12 @@ class UnitInputParser():
     # handled inside `parse`).
     #--------------------------------------------------------
     @singledispatchmethod
-    def _parse_internal(self, in_, units=None) -> unyt.unyt_array:
+    def _parse_internal(self, in_, units=None) -> unyt_array:
         if units is None:
             raise ValueError('No default units set; cannot parse object '
                              f'without units {in_!r}')
 
-        return unyt.unyt_array(in_, units, registry=self.registry)
+        return unyt_array(in_, units, registry=self.registry)
 
     @_parse_internal.register
     def _(self, in_: unyt.unyt_array, units=None):
@@ -225,7 +226,7 @@ class UnitInputParser():
         if len(in_) != 2:
             raise ValueError(f'Input tuple must have 2 items (got {len(in_)})')
 
-        return unyt.unyt_array(*in_, registry=self.registry)
+        return unyt_array(*in_, registry=self.registry)
 
     if xr is not None:
         @_parse_internal.register
@@ -259,7 +260,7 @@ def process_unit_input(in_,
                        convert: bool = False,
                        check_dims: bool = False,
                        copy: bool = True,
-                       registry: unyt.UnitRegistry = None) -> unyt.unyt_array:
+                       registry: unyt.UnitRegistry = None) -> unyt_array:
     """Process an input value that may or may not have units.
 
     If the input value doesn't have units, assumes the input is in the requested
