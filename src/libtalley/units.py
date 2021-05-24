@@ -5,6 +5,11 @@ from functools import singledispatchmethod
 import unyt
 from unyt.exceptions import UnitConversionError
 
+try:
+    import xarray as xr
+except ImportError:
+    xr = None
+
 logger = logging.getLogger(__name__)
 
 #===============================================================================
@@ -205,6 +210,13 @@ class UnitInputParser():
             raise ValueError(f'Input tuple must have 2 items (got {len(in_)})')
 
         return unyt.unyt_array(*in_, registry=self.registry)
+
+    if xr is not None:
+        @_parse_internal.register
+        def _(self, in_: xr.DataArray, units=None):
+            value = in_.values
+            units = in_.attrs.get('units', units)
+            return self._parse_internal(value, units)
 
     def _get_units(self, q) -> unyt.Unit:
         """Get the units of an object."""
