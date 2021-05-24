@@ -180,7 +180,7 @@ class UnitInputParser():
             # Skip dims check if convert is True, since the same check will
             # happen internally inside unyt.
             if self.check_dims and not self.convert:
-                _check_dimensions(q, units)
+                self._check_dimensions(q, units)
 
             if self.convert:
                 q = q.to(units)
@@ -205,6 +205,25 @@ class UnitInputParser():
             raise ValueError(f'Input tuple must have 2 items (got {len(in_)})')
 
         return unyt.unyt_array(*in_, registry=self.registry)
+
+    def _get_units(self, q) -> unyt.Unit:
+        """Get the units of an object."""
+        try:
+            units = q.units
+        except AttributeError:
+            units = unyt.dimensionless
+        return unyt.Unit(units, registry=self.registry)
+
+    def _check_dimensions(self, a, b):
+        """Check that a and b have the same dimensions, and raise an error if
+        they do not.
+        """
+        units_a = self._get_units(a)
+        units_b = self._get_units(b)
+        dim_a = units_a.dimensions
+        dim_b = units_b.dimensions
+        if dim_a != dim_b:
+            raise UnitConversionError(units_a, dim_a, units_b, dim_b)
 
 
 def process_unit_input(in_,
@@ -267,24 +286,6 @@ def process_unit_input(in_,
                              check_dims=check_dims,
                              registry=registry)
     return parser.parse(in_)
-
-
-def _get_units(q) -> unyt.Unit:
-    """Get the units of an object."""
-    try:
-        units = q.units
-    except AttributeError:
-        units = unyt.dimensionless
-    return units
-
-
-def _check_dimensions(a, b):
-    units_a = _get_units(a)
-    units_b = _get_units(b)
-    dim_a = units_a.dimensions
-    dim_b = units_b.dimensions
-    if dim_a != dim_b:
-        raise UnitConversionError(units_a, dim_a, units_b, dim_b)
 
 
 def convert(value, units: UnitLike, registry: unyt.UnitRegistry = None):
