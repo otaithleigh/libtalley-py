@@ -107,6 +107,17 @@ class UnitInputParser():
         self.check_dims = check_dims
         self.copy = copy
 
+    def __repr__(self):
+        clsname = self.__class__.__name__
+        attrs = [
+            f'default_units={self.default_units!r}',
+            f'convert={self.convert!r}',
+            f'check_dims={self.check_dims!r}',
+            f'copy={self.copy!r}',
+            f'registry={self.registry!r}',
+        ]
+        return f'{clsname}(' + ', '.join(attrs) + ')'
+
     #===========================================================================
     # Units handling
     #===========================================================================
