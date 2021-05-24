@@ -77,6 +77,7 @@ class UnitInputParser():
                  default_units: UnitLike = None,
                  convert: bool = False,
                  check_dims: bool = False,
+                 copy: bool = True,
                  registry: unyt.UnitRegistry = None):
         """
         Parameters
@@ -92,6 +93,8 @@ class UnitInputParser():
             If True, ensures that input has units compatible with
             `default_units`, but does not convert the input. Has no effect if
             `default_units` is None or `convert` is True. (default: False)
+        copy : bool, optional
+            Whether to copy underlying input data. (default: True)
         registry : unyt.UnitRegistry, optional
             Registry used to construct new unyt_array instances. Necessary if
             the desired units are not in the default unit registry. (default:
@@ -101,6 +104,7 @@ class UnitInputParser():
         self.default_units = default_units
         self.convert = convert
         self.check_dims = check_dims
+        self.copy = copy
 
     @property
     def default_units(self) -> t.Union[unyt.Unit, None]:
@@ -181,6 +185,9 @@ class UnitInputParser():
         if q.ndim == 0:
             q = q.reshape(1)[0]
 
+        if self.copy:
+            q = q.copy(order='K')
+
         if units is not None:
             # Skip dims check if convert is True, since the same check will
             # happen internally inside unyt.
@@ -188,10 +195,19 @@ class UnitInputParser():
                 self._check_dimensions(q, units)
 
             if self.convert:
-                q = q.to(units)
+                q.convert_to_units(units)
 
         return q
 
+    #--------------------------------------------------------
+    # Parse internal
+    #
+    # These methods define how 'parse' processes different
+    # types into a unyt_array. They should never copy input
+    # data, if possible, and they should always return
+    # unyt_array, not unyt_quantity (scalarfication is
+    # handled inside `parse`).
+    #--------------------------------------------------------
     @singledispatchmethod
     def _parse_internal(self, in_, units=None) -> unyt.unyt_array:
         if units is None:
@@ -242,6 +258,7 @@ def process_unit_input(in_,
                        default_units: UnitLike = None,
                        convert: bool = False,
                        check_dims: bool = False,
+                       copy: bool = True,
                        registry: unyt.UnitRegistry = None) -> unyt.unyt_array:
     """Process an input value that may or may not have units.
 
@@ -276,6 +293,8 @@ def process_unit_input(in_,
         If True, ensures that input has units compatible with `default_units`,
         but does not convert the input. Has no effect if `default_units` is
         None or `convert` is True. (default: False)
+    copy : bool, optional
+        Whether to copy underlying input data. (default: True)
     registry : unyt.UnitRegistry, optional
         Necessary if the desired units are not in the default unit registry.
         Used to construct the returned unyt.unyt_array object.
@@ -296,6 +315,7 @@ def process_unit_input(in_,
     parser = UnitInputParser(default_units=default_units,
                              convert=convert,
                              check_dims=check_dims,
+                             copy=copy,
                              registry=registry)
     return parser.parse(in_)
 
