@@ -69,6 +69,20 @@ uscs_system['stress'] = 'ksi'
 uscs_system['moment'] = 'kip * inch'
 
 
+#---------------------------------------
+# Short repr for UnitSystems
+#---------------------------------------
+def _UnitSystem_inline_repr(self):
+    clsname = self.__class__.__name__
+    length = self['length']
+    mass = self['mass']
+    time = self['time']
+    return f'<{clsname} {self.name!r} [{length}, {mass}, {time}]>'
+
+
+unyt.UnitSystem._inline_repr = _UnitSystem_inline_repr
+
+
 #===============================================================================
 # Utility functions
 #===============================================================================
