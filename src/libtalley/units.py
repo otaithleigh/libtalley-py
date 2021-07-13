@@ -21,7 +21,7 @@ SystemLike = t.Union[str, unyt.UnitSystem]
 
 
 #===============================================================================
-# Units, dimensions, and unit systems
+# Units and dimensions
 #===============================================================================
 def _safe_define(symbol: str, *args, **kwargs):
     # unyt occasionally adds new built-ins, and throws an error for already
@@ -54,19 +54,117 @@ _safe_define('ksf', (1000.0, 'psf'))
 unyt.dimensions.stress = unyt.dimensions.pressure
 unyt.dimensions.moment = unyt.dimensions.energy
 
+
+#===============================================================================
+# Unit systems
+#===============================================================================
+class UnitSystemError(Exception):
+    """Base class for unit-system-related errors."""
+
+
+class UnitSystemExistsError(UnitSystemError):
+    """Raised when trying to override a unit system that already exists."""
+    def __init__(self, name) -> None:
+        super().__init__(f'Unit system with name {name!r} already exists')
+
+
+class UnitSystemNotFoundError(UnitSystemError):
+    """Raised when a unit system is not found in the registry."""
+    def __init__(self, name):
+        super().__init__(f'Unit system {name!r} not found in registry')
+
+
+def get_unit_system(system: SystemLike) -> unyt.UnitSystem:
+    """Retrieve the actual UnitSystem object from the unit systems registry.
+
+    If passed a UnitSystem object, the object is returned unchanged.
+
+    Parameters
+    ----------
+    system : str
+        The name of the unit system to retrieve.
+    """
+    if isinstance(system, unyt.UnitSystem):
+        return system
+
+    try:
+        return unyt.unit_systems.unit_system_registry[str(system)]
+    except KeyError as exc:
+        raise UnitSystemNotFoundError(system) from exc
+
+
+def create_unit_system(length, mass, time, name=None, **kwargs):
+    """
+    Create a new unit system based on `length`, `mass`, and `time`, with
+    additional convenience units set with `**kwargs`. Note that this does not
+    check to make sure that any convenience units are consistent with the base
+    units.
+
+    Parameters
+    ----------
+    length : UnitLike
+        The base length unit.
+    mass : UnitLike
+        The base mass unit.
+    time : UnitLike
+        The base time unit.
+    name : str, optional
+        Name for the unit system. If not provided, a name is generated from the
+        length, mass, and time units. (default: None)
+
+    Raises
+    ------
+    UnitSystemExistsError
+        If a unit system with name `name` already exists
+
+    Example
+    -------
+    >>> system = create_unit_system('mm', 'Gg', 's', force='kN')
+    >>> system
+    mm_Gg_s Unit System
+     Base Units:
+      length: mm
+      mass: Gg
+      time: s
+      temperature: K
+      angle: rad
+      current_mks: A
+      luminous_intensity: cd
+      logarithmic: Np
+     Other Units:
+      force: kN
+    """
+    if name is None:
+        name = f'{length}_{mass}_{time}'
+
+    if name in unyt.unit_systems.unit_system_registry:
+        raise UnitSystemExistsError(name)
+
+    system = unyt.UnitSystem(
+        name,
+        length,
+        mass,
+        time,
+        registry=unyt.unit_registry.default_unit_registry,
+    )
+    for dim, unit in kwargs.items():
+        system[dim] = unit
+
+    return system
+
+
 #---------------------------------------
 # US customary system
 #---------------------------------------
-uscs_system = unyt.UnitSystem(
-    'uscs',
-    length_unit='inch',
-    mass_unit='kblob',
-    time_unit='s',
-    registry=unyt.unit_registry.default_unit_registry,
+uscs_system = create_unit_system(
+    name='uscs',
+    length='inch',
+    mass='kblob',
+    time='s',
+    force='kip',
+    stress='ksi',
+    moment='kip * inch',
 )
-uscs_system['force'] = 'kip'
-uscs_system['stress'] = 'ksi'
-uscs_system['moment'] = 'kip * inch'
 
 
 #---------------------------------------
@@ -382,22 +480,3 @@ def convert(value, units: UnitLike, registry: unyt.UnitRegistry = None):
     array([0.0030303 , 0.00454545, 0.00606061])
     """
     return process_unit_input(value, units, convert=True, registry=registry).v
-
-
-def get_unit_system(system: SystemLike) -> unyt.UnitSystem:
-    """Retrieve the actual UnitSystem object from the unit systems registry.
-
-    If passed a UnitSystem object, the object is returned unchanged.
-
-    Parameters
-    ----------
-    system : str
-        The name of the unit system to retrieve.
-    """
-    if isinstance(system, unyt.UnitSystem):
-        return system
-
-    try:
-        return unyt.unit_systems.unit_system_registry[str(system)]
-    except KeyError as exc:
-        raise ValueError(f'{system!r} is not a valid unit system') from exc
