@@ -342,7 +342,7 @@ def seismic_response_coeff(R, T, sdc, level: str = 'design'):
     sdc : str
         Seismic design category (Dmax, Dmin, etc.).
 
-    level : {'design', 'mce'}
+    level : {'design', 'mce'}, optional
         Hazard level to get the response coefficient for. (default: 'design')
 
     Note that this function follows the assumptions and restrictions enforced by
