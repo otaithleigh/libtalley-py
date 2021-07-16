@@ -396,3 +396,24 @@ def design_response_spectrum(sdc, tl=4.0):
     sds = mapped_value('SDS', sdc)
     sd1 = mapped_value('SD1', sdc)
     return asce7_16.seismic.design_response_spectrum(sds, sd1, tl)
+
+
+def mce_response_spectrum(sdc, tl=4.0):
+    """Generate the MCE-level response spectrum for the given seismic design
+    category.
+
+    Parameters
+    ----------
+    sdc : {'Dmax', 'Dmin', 'Cmax', 'Cmin', 'Bmax', 'Bmin'}
+        Seismic design category.
+
+    tl : float, optional
+        Transition period between constant velocity and constant displacement
+        response domains. Note that FEMA P695 does not include values for T_L
+        since it restricts archetypes to having fundamental periods of 4 sec or
+        less, and thus T_L should not apply to most FEMA P695 studies.
+        (default: 4.0)
+    """
+    sms = mapped_value('SMS', sdc)
+    sm1 = mapped_value('SM1', sdc)
+    return asce7_16.seismic.design_response_spectrum(sms, sm1, tl)
