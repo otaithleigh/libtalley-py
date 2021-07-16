@@ -328,7 +328,7 @@ def fundamental_period(hn, Ct, x, sdc):
     return np.maximum(Cu*Ta, 0.25)
 
 
-def seismic_response_coeff(R, T, sdc):
+def seismic_response_coeff(R, T, sdc, level: str = 'design'):
     """Calculate the seismic response coefficient, C_s.
 
     Parameters
@@ -342,6 +342,9 @@ def seismic_response_coeff(R, T, sdc):
     sdc : str
         Seismic design category (Dmax, Dmin, etc.).
 
+    level : {'design', 'mce'}
+        Hazard level to get the response coefficient for. (default: 'design')
+
     Note that this function follows the assumptions and restrictions enforced by
     FEMA P695; namely, it is used only with mapped values from the
     ``mapped_values`` function, and for structures with periods of 4.0 s or
@@ -353,13 +356,21 @@ def seismic_response_coeff(R, T, sdc):
                       f'(T = {T} s) is out of FEMA P695 range')
 
     Ts = mapped_value('Ts', sdc)
-    SD1 = mapped_value('SD1', sdc)
-    SDS = mapped_value('SDS', sdc)
+
+    _level = level.casefold()
+    if _level == 'design':
+        S1 = mapped_value('SD1', sdc)
+        SS = mapped_value('SDS', sdc)
+    elif _level in ['mce', 'maximum']:
+        S1 = mapped_value('SM1', sdc)
+        SS = mapped_value('SMS', sdc)
+    else:
+        raise ValueError(f"level {level!r} must be one of {{'design', 'mce'}}")
 
     if T <= Ts:
-        Cs = SDS/R
+        Cs = SS/R
     else:
-        Cs = max(SD1/(T*R), 0.044*SDS)
+        Cs = max(S1/(T*R), 0.044*SS)
 
     Cs = max(Cs, 0.01)
 
