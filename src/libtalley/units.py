@@ -178,7 +178,8 @@ def _UnitSystem_inline_repr(self):
     return f'<{clsname} {self.name!r} [{length}, {mass}, {time}]>'
 
 
-unyt.UnitSystem._inline_repr = _UnitSystem_inline_repr
+if not hasattr(unyt.UnitSystem, '_inline_repr'):
+    unyt.UnitSystem._inline_repr = _UnitSystem_inline_repr
 
 
 #===============================================================================
