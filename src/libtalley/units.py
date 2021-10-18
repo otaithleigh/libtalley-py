@@ -126,7 +126,7 @@ def create_unit_system(length,
                        logarithmic=None,
                        name=None,
                        consistent=False,
-                       **kwargs):
+                       **convenience_units):
     """
     Create a new unit system.
 
@@ -156,8 +156,8 @@ def create_unit_system(length,
         such that, in base units, convenience units have a magnitude of 1.0. For
         example, force='N' is consistent with MKS (N = 1.0 kg*m/s**2), but
         force='kN' is not (kN = 1e3 kg*m/s**2). (default: False)
-    **kwargs : str, optional
-        Convenience units (e.g., force='kN')
+    **convenience_units : str, optional
+        Mapping of dimension names to convenience units, e.g., ``force='kN'``.
 
     Raises
     ------
@@ -231,7 +231,7 @@ def create_unit_system(length,
         **base_units,
         registry=unyt.unit_registry.default_unit_registry,
     )
-    for dim, unit in kwargs.items():
+    for dim, unit in convenience_units.items():
         system[dim] = unit
 
     # Check consistency if asked to.
