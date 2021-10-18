@@ -2,7 +2,6 @@ import logging
 import typing as t
 import uuid
 from functools import singledispatchmethod
-from itertools import starmap
 from math import isclose
 
 import unyt
@@ -246,13 +245,9 @@ def create_unit_system(length,
             # Remove bad system from registry
             del unyt.unit_systems.unit_system_registry[name]
 
-            # Format the provided base units; keys in `base_units` have '_unit'
-            # appended at the end because that's what the UnitSystem constructor
-            # asks for, so strip off last 5 chars of `dim`
-            format_base = lambda dim, unit: f'{dim[:-5]}={unit}'
-            base = ', '.join(starmap(format_base, base_units.items()))
-            raise UnitSystemConsistencyError(f'{check.bad_dim}={check.bad_unit}'
-                                             f' is not consistent with {base}')
+            raise UnitSystemConsistencyError(
+                f'Inconsistent unit for dimension {check.bad_dim!r}: '
+                f'1.0 {check.bad_unit} = {check.bad_base}')
 
     return system
 
@@ -267,10 +262,13 @@ class ConsistentUnitSystemCheck(t.NamedTuple):
         If not consistent, the dimension corresponding to `bad_unit`.
     bad_unit : unyt.Unit | None
         If not consistent, the first convenience unit that was inconsistent.
+    bad_base : 
+        If not consistent, the quantity `bad_dim * bad_unit` in base units.
     """
     is_consistent: bool
     bad_dim: t.Optional[str]
     bad_unit: t.Optional[unyt.Unit]
+    bad_base: t.Optional[unyt.unyt_quantity]
 
 
 def check_consistent_unit_system(system: unyt.UnitSystem):
@@ -280,6 +278,11 @@ def check_consistent_unit_system(system: unyt.UnitSystem):
     Consistency in this case means convenience units must evaluate to 1.0 in the
     base units. For example, force in newtons is consistent with MKS base units
     (N = 1.0 kg*m/s**2), but force in kilonewtons is not (kN = 10**3 kg*m/s**2).
+
+    Parameters
+    ----------
+    system : UnitSystem
+        The unit system to check.
     """
     # Get base dims as str; subscript from 1:-1 to drop parentheses from
     # dimension names
@@ -303,15 +306,17 @@ def check_consistent_unit_system(system: unyt.UnitSystem):
                 is_consistent = False
                 bad_dim = dim
                 bad_unit = unit
+                bad_base = q
                 break
         else:
             is_consistent = True
             bad_dim = None
             bad_unit = None
+            bad_base = None
     finally:
         del unyt.unit_systems.unit_system_registry[temp_name]
 
-    return ConsistentUnitSystemCheck(is_consistent, bad_dim, bad_unit)
+    return ConsistentUnitSystemCheck(is_consistent, bad_dim, bad_unit, bad_base)
 
 
 #---------------------------------------
