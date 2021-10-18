@@ -223,14 +223,17 @@ def create_unit_system(length,
     if name is None:
         name = '_'.join(map(str, base_units.values()))
 
+    # Check against existing unit systems.
     if name in unyt.unit_systems.unit_system_registry:
         raise UnitSystemExistsError(name)
 
+    # Create new system with base units.
     system = unyt.UnitSystem(
         str(name),
         **base_units,
         registry=unyt.unit_registry.default_unit_registry,
     )
+    # Apply convenience units.
     for dim, unit in convenience_units.items():
         system[dim] = unit
 
