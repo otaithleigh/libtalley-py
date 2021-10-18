@@ -1,6 +1,9 @@
 import logging
 import typing as t
+import uuid
 from functools import singledispatchmethod
+from itertools import starmap
+from math import isclose
 
 import unyt
 from unyt import unyt_array
@@ -78,6 +81,10 @@ class UnitSystemError(Exception):
     """Base class for unit-system-related errors."""
 
 
+class UnitSystemConsistencyError(UnitSystemError):
+    """Raised when a unit system is not consistent but should be."""
+
+
 class UnitSystemExistsError(UnitSystemError):
     """Raised when trying to override a unit system that already exists."""
     def __init__(self, name) -> None:
@@ -118,12 +125,10 @@ def create_unit_system(length,
                        luminous_intensity=None,
                        logarithmic=None,
                        name=None,
+                       consistent=False,
                        **kwargs):
     """
-    Create a new unit system based on `length`, `mass`, and `time`, with
-    additional convenience units set with `**kwargs`. Note that this does not
-    check to make sure that any convenience units are consistent with the base
-    units.
+    Create a new unit system.
 
     Parameters
     ----------
@@ -146,6 +151,11 @@ def create_unit_system(length,
     name : str, optional
         Name for the unit system. If not provided, a name is generated from the
         provided base units. (default: None)
+    consistent : bool, optional
+        If True, enforce consistency between convenience units and base units
+        such that, in base units, convenience units have a magnitude of 1.0. For
+        example, force='N' is consistent with MKS (N = 1.0 kg*m/s**2), but
+        force='kN' is not (kN = 1e3 kg*m/s**2). (default: False)
     **kwargs : str, optional
         Convenience units (e.g., force='kN')
 
@@ -153,6 +163,8 @@ def create_unit_system(length,
     ------
     UnitSystemExistsError
         If a unit system with name `name` already exists
+    UnitSystemConsistencyError
+        If `consistent` is True and unit system is not consistent
 
     Example
     -------
@@ -222,7 +234,81 @@ def create_unit_system(length,
     for dim, unit in kwargs.items():
         system[dim] = unit
 
+    # Check consistency if asked to.
+    if consistent:
+        check = check_consistent_unit_system(system)
+        if not check.is_consistent:
+            # Remove bad system from registry
+            del unyt.unit_systems.unit_system_registry[name]
+
+            # Format the provided base units; keys in `base_units` have '_unit'
+            # appended at the end because that's what the UnitSystem constructor
+            # asks for, so strip off last 5 chars of `dim`
+            format_base = lambda dim, unit: f'{dim[:-5]}={unit}'
+            base = ', '.join(starmap(format_base, base_units.items()))
+            raise UnitSystemConsistencyError(f'{check.bad_dim}={check.bad_unit}'
+                                             f' is not consistent with {base}')
+
     return system
+
+
+class ConsistentUnitSystemCheck(t.NamedTuple):
+    """
+    Parameters
+    ----------
+    is_consistent : bool
+        Whether the unit system is consistent or not.
+    bad_dim : str | None
+        If not consistent, the dimension corresponding to `bad_unit`.
+    bad_unit : unyt.Unit | None
+        If not consistent, the first convenience unit that was inconsistent.
+    """
+    is_consistent: bool
+    bad_dim: t.Optional[str]
+    bad_unit: t.Optional[unyt.Unit]
+
+
+def check_consistent_unit_system(system: unyt.UnitSystem):
+    """Check that a unit system's convenience units are consistent with its base
+    units.
+
+    Consistency in this case means convenience units must evaluate to 1.0 in the
+    base units. For example, force in newtons is consistent with MKS base units
+    (N = 1.0 kg*m/s**2), but force in kilonewtons is not (kN = 10**3 kg*m/s**2).
+    """
+    # Get base dims as str; subscript from 1:-1 to drop parentheses from
+    # dimension names
+    base_dims = list(map(lambda d: str(d)[1:-1], system.base_units))
+    base_units = dict(zip(base_dims, system.base_units.values()))
+
+    # Create unit system without convenience units
+    temp_name = str(uuid.uuid4())
+    system_no_conv = create_unit_system(**base_units, name=temp_name)
+
+    convenience_units = {
+        dim: system[dim]
+        for dim in system._dims if dim not in base_dims
+    }
+
+    try:
+        # This will check base units as well, but there's no easy "give me the
+        # convenience units" attribute
+        for dim, unit in convenience_units.items():
+            q = 1.0*unit
+            q.convert_to_base(system_no_conv)
+            if not isclose(q.v, 1.0):
+                is_consistent = False
+                bad_dim = dim
+                bad_unit = unit
+                break
+        else:
+            is_consistent = True
+            bad_dim = None
+            bad_unit = None
+    finally:
+        del unyt.unit_systems.unit_system_registry[temp_name]
+
+    return ConsistentUnitSystemCheck(is_consistent, bad_dim, bad_unit)
 
 
 #---------------------------------------
