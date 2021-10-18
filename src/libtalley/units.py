@@ -296,8 +296,6 @@ def check_consistent_unit_system(system: unyt.UnitSystem):
     }
 
     try:
-        # This will check base units as well, but there's no easy "give me the
-        # convenience units" attribute
         for dim, unit in convenience_units.items():
             q = 1.0*unit
             q.convert_to_base(system_no_conv)
