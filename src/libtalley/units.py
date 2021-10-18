@@ -16,6 +16,8 @@ except ImportError:
     xr = None
 
 __all__ = [
+    'check_consistent_unit_system',
+    'ConsistentUnitSystemCheck',
     'convert',
     'create_unit_system',
     'get_unit_system',
