@@ -109,7 +109,16 @@ def get_unit_system(system: SystemLike) -> unyt.UnitSystem:
         raise UnitSystemNotFoundError(system) from exc
 
 
-def create_unit_system(length, mass, time, name=None, **kwargs):
+def create_unit_system(length,
+                       mass,
+                       time,
+                       temperature=None,
+                       angle=None,
+                       current_mks=None,
+                       luminous_intensity=None,
+                       logarithmic=None,
+                       name=None,
+                       **kwargs):
     """
     Create a new unit system based on `length`, `mass`, and `time`, with
     additional convenience units set with `**kwargs`. Note that this does not
@@ -124,9 +133,21 @@ def create_unit_system(length, mass, time, name=None, **kwargs):
         The base mass unit.
     time : UnitLike
         The base time unit.
+    temperature : UnitLike, optional
+        The base temperature unit. (default: 'K')
+    angle : UnitLike, optional
+        The base angle unit. (default: 'rad')
+    current_mks : UnitLike, optional
+        The base current unit. (default: 'A')
+    luminous_intensity : UnitLike, optional
+        The base luminous intensity unit. (default: 'Cd')
+    logarithmic : UnitLike, optional
+        The base logarithmic unit. (default: 'Np')
     name : str, optional
         Name for the unit system. If not provided, a name is generated from the
-        length, mass, and time units. (default: None)
+        provided base units. (default: None)
+    **kwargs : str, optional
+        Convenience units (e.g., force='kN')
 
     Raises
     ------
@@ -135,6 +156,9 @@ def create_unit_system(length, mass, time, name=None, **kwargs):
 
     Example
     -------
+    Unit system that uses millimeters and gigagrams, with a convenience
+    kilonewton unit:
+
     >>> system = create_unit_system('mm', 'Gg', 's', force='kN')
     >>> system
     mm_Gg_s Unit System
@@ -149,18 +173,50 @@ def create_unit_system(length, mass, time, name=None, **kwargs):
       logarithmic: Np
      Other Units:
       force: kN
+
+    Unit system with different base temperature unit, but still auto-generated
+    name:
+
+    >>> system = create_unit_system('m', 'kg', 's', temperature='degC')
+    >>> system
+    m_kg_s_degC Unit System
+     Base Units:
+      length: m
+      mass: kg
+      time: s
+      temperature: degC
+      angle: rad
+      current_mks: A
+      luminous_intensity: cd
+      logarithmic: Np
+     Other Units:
     """
+    base_units = dict(length_unit=length, mass_unit=mass, time_unit=time)
+
+    # Handle other default base units; don't include them in auto-generated name
+    # if not provided. They already have defaults set by the UnitSystem
+    # constructor.
+    if temperature is not None:
+        base_units['temperature_unit'] = temperature
+    if angle is not None:
+        base_units['angle_unit'] = angle
+    if current_mks is not None:
+        base_units['current_mks_unit'] = current_mks
+    if luminous_intensity is not None:
+        base_units['luminous_intensity_unit'] = luminous_intensity
+    if logarithmic is not None:
+        base_units['logarithmic_unit'] = logarithmic
+
+    # Generate name if not provided.
     if name is None:
-        name = f'{length}_{mass}_{time}'
+        name = '_'.join(map(str, base_units.values()))
 
     if name in unyt.unit_systems.unit_system_registry:
         raise UnitSystemExistsError(name)
 
     system = unyt.UnitSystem(
         str(name),
-        length,
-        mass,
-        time,
+        **base_units,
         registry=unyt.unit_registry.default_unit_registry,
     )
     for dim, unit in kwargs.items():
