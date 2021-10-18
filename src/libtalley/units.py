@@ -157,7 +157,7 @@ def create_unit_system(length, mass, time, name=None, **kwargs):
         raise UnitSystemExistsError(name)
 
     system = unyt.UnitSystem(
-        name,
+        str(name),
         length,
         mass,
         time,
