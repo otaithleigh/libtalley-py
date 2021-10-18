@@ -4,6 +4,7 @@ from functools import singledispatchmethod
 
 import unyt
 from unyt import unyt_array
+from unyt.dimensions import area, force, length
 from unyt.exceptions import UnitConversionError
 
 try:
@@ -51,8 +52,8 @@ _safe_define('ksf', (1000.0, 'psf'))
 #---------------------------------------
 # Dimensions
 #---------------------------------------
-unyt.dimensions.stress = unyt.dimensions.pressure
-unyt.dimensions.moment = unyt.dimensions.energy
+unyt.dimensions.stress = force/area
+unyt.dimensions.moment = force*length
 
 
 #===============================================================================
