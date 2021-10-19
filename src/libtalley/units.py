@@ -7,7 +7,7 @@ from math import isclose
 import unyt
 from unyt import unyt_array
 from unyt.dimensions import area, force, length
-from unyt.exceptions import UnitConversionError
+from unyt.exceptions import IllDefinedUnitSystem, UnitConversionError
 
 try:
     import xarray as xr
@@ -127,6 +127,7 @@ def create_unit_system(length,
                        logarithmic=None,
                        name=None,
                        consistent=False,
+                       strict_dims=True,
                        **convenience_units):
     """
     Create a new unit system.
@@ -157,11 +158,16 @@ def create_unit_system(length,
         such that, in base units, convenience units have a magnitude of 1.0. For
         example, force='N' is consistent with MKS (N = 1.0 kg*m/s**2), but
         force='kN' is not (kN = 1e3 kg*m/s**2). (default: False)
+    strict_dims : bool, optional
+        If True, strictly enforce convenience units having the dimensions they
+        map to. (default: True)
     **convenience_units : str, optional
         Mapping of dimension names to convenience units, e.g., ``force='kN'``.
 
     Raises
     ------
+    IllDefinedUnitSystem
+        If `strict_dims` is True and convenience units do not strictly map
     UnitSystemExistsError
         If a unit system with name `name` already exists
     UnitSystemConsistencyError
@@ -236,6 +242,13 @@ def create_unit_system(length,
     )
     # Apply convenience units.
     for dim, unit in convenience_units.items():
+        if strict_dims:
+            dim_obj = getattr(unyt.dimensions, dim)
+            unit_obj = unyt.Unit(unit)
+            if unit_obj.dimensions != dim_obj:
+                raise IllDefinedUnitSystem(f'{dim} [{dim_obj}] -> {unit_obj} '
+                                           f'[{unit_obj.dimensions}]')
+
         system[dim] = unit
 
     # Check consistency if asked to.
