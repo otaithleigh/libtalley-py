@@ -240,27 +240,29 @@ def create_unit_system(length,
         **base_units,
         registry=unyt.unit_registry.default_unit_registry,
     )
-    # Apply convenience units.
-    for dim, unit in convenience_units.items():
-        if strict_dims:
-            dim_obj = getattr(unyt.dimensions, dim)
-            unit_obj = unyt.Unit(unit)
-            if unit_obj.dimensions != dim_obj:
-                raise IllDefinedUnitSystem(f'{dim} [{dim_obj}] -> {unit_obj} '
-                                           f'[{unit_obj.dimensions}]')
+    try:
+        # Apply convenience units.
+        for dim, unit in convenience_units.items():
+            if strict_dims:
+                dim_obj = getattr(unyt.dimensions, dim)
+                unit_obj = unyt.Unit(unit)
+                if unit_obj.dimensions != dim_obj:
+                    raise IllDefinedUnitSystem(
+                        f'{dim} [{dim_obj}] -> {unit_obj} '
+                        f'[{unit_obj.dimensions}]')
 
-        system[dim] = unit
+            system[dim] = unit
 
-    # Check consistency if asked to.
-    if consistent:
-        check = check_consistent_unit_system(system)
-        if not check.is_consistent:
-            # Remove bad system from registry
-            del unyt.unit_systems.unit_system_registry[name]
-
-            raise UnitSystemConsistencyError(
-                f'Inconsistent unit for dimension {check.bad_dim!r}: '
-                f'1.0 {check.bad_unit} = {check.bad_base}')
+        # Check consistency if asked to.
+        if consistent:
+            check = check_consistent_unit_system(system)
+            if not check.is_consistent:
+                raise UnitSystemConsistencyError(
+                    f'Inconsistent unit for dimension {check.bad_dim!r}: '
+                    f'1.0 {check.bad_unit} = {check.bad_base}')
+    except:
+        # Remove bad system from registry
+        del unyt.unit_systems.unit_system_registry[name]
 
     return system
 
