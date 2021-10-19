@@ -281,7 +281,7 @@ class ConsistentUnitSystemCheck(t.NamedTuple):
         If not consistent, the dimension corresponding to `bad_unit`.
     bad_unit : unyt.Unit | None
         If not consistent, the first convenience unit that was inconsistent.
-    bad_base : 
+    bad_base : unyt.unyt_quantity | None
         If not consistent, the quantity `bad_dim * bad_unit` in base units.
     """
     is_consistent: bool
