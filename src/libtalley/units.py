@@ -117,19 +117,19 @@ def get_unit_system(system: SystemLike) -> unyt.UnitSystem:
         raise UnitSystemNotFoundError(system) from exc
 
 
-def create_unit_system(length,
-                       mass,
-                       time,
-                       temperature=None,
-                       angle=None,
-                       current_mks=None,
-                       luminous_intensity=None,
-                       logarithmic=None,
-                       name=None,
+def create_unit_system(length: UnitLike,
+                       mass: UnitLike,
+                       time: UnitLike,
+                       temperature: UnitLike = None,
+                       angle: UnitLike = None,
+                       current_mks: UnitLike = None,
+                       luminous_intensity: UnitLike = None,
+                       logarithmic: UnitLike = None,
+                       name: str = None,
                        registry: t.Optional[unyt.UnitRegistry] = None,
-                       consistent=False,
-                       strict_dims=True,
-                       **convenience_units):
+                       consistent: bool = False,
+                       strict_dims: bool = True,
+                       **convenience_units: UnitLike) -> unyt.UnitSystem:
     """
     Create a new unit system.
 
