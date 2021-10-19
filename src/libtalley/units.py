@@ -126,6 +126,7 @@ def create_unit_system(length,
                        luminous_intensity=None,
                        logarithmic=None,
                        name=None,
+                       registry: t.Optional[unyt.UnitRegistry] = None,
                        consistent=False,
                        strict_dims=True,
                        **convenience_units):
@@ -153,6 +154,9 @@ def create_unit_system(length,
     name : str, optional
         Name for the unit system. If not provided, a name is generated from the
         provided base units. (default: None)
+    registry : UnitRegistry, optional
+        The unit registry for the system. If None, the default unit registry is
+        used.
     consistent : bool, optional
         If True, enforce consistency between convenience units and base units
         such that, in base units, convenience units have a magnitude of 1.0. For
@@ -234,12 +238,11 @@ def create_unit_system(length,
     if name in unyt.unit_systems.unit_system_registry:
         raise UnitSystemExistsError(name)
 
+    if registry is None:
+        registry = unyt.unit_registry.default_unit_registry
+
     # Create new system with base units.
-    system = unyt.UnitSystem(
-        str(name),
-        **base_units,
-        registry=unyt.unit_registry.default_unit_registry,
-    )
+    system = unyt.UnitSystem(str(name), **base_units, registry=registry)
     try:
         # Apply convenience units.
         for dim, unit in convenience_units.items():
@@ -306,7 +309,9 @@ def check_consistent_unit_system(system: unyt.UnitSystem):
 
     # Create unit system without convenience units
     temp_name = str(uuid.uuid4())
-    system_no_conv = create_unit_system(**base_units, name=temp_name)
+    system_no_conv = create_unit_system(**base_units,
+                                        name=temp_name,
+                                        registry=system.registry)
 
     convenience_units = {
         dim: system[dim]
