@@ -340,9 +340,9 @@ def check_consistent_unit_system(system: unyt.UnitSystem):
     return ConsistentUnitSystemCheck(is_consistent, bad_dim, bad_unit, bad_base)
 
 
-#---------------------------------------
-# US customary system
-#---------------------------------------
+#-------------------------------------------------------------------
+# Consistent unit systems for typical use, e.g., in OpenSees
+#-------------------------------------------------------------------
 uscs_system = create_unit_system(
     name='uscs',
     length='inch',
@@ -351,6 +351,17 @@ uscs_system = create_unit_system(
     force='kip',
     stress='ksi',
     moment='kip * inch',
+    consistent=True,
+)
+metric_system = create_unit_system(
+    name='metric',
+    length='mm',
+    mass='Gg',
+    time='s',
+    force='kN',
+    stress='GPa',
+    moment='kN*mm',
+    consistent=True,
 )
 
 
