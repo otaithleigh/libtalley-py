@@ -16,7 +16,7 @@ requirements:
     - python
     - pip
   run:
-    - python>=3.7.0
+    - python>=3.8.0
     - numpy>=1.15.0
     - pandas
     - requests
