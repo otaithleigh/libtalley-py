@@ -266,6 +266,7 @@ def create_unit_system(length,
     except:
         # Remove bad system from registry
         del unyt.unit_systems.unit_system_registry[name]
+        raise
 
     return system
 
