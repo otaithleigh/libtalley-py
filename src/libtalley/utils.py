@@ -8,6 +8,11 @@ import numpy as np
 import pandas as pd
 from tabulate import tabulate
 
+try:
+    import xarray as xr
+except ImportError:
+    xr = None
+
 __all__ = [
     'all_same_sign',
     'filename_noext',
@@ -87,6 +92,21 @@ def _(s: pd.Series, p):
         round_signif(s.to_numpy(), p),
         index=s.index,
     )
+
+
+if xr is not None:
+
+    @round_signif.register
+    def _(ds: xr.Dataset, p):
+        data = {
+            name: round_signif(var, p)
+            for name, var in ds.data_vars.items()
+        }
+        return ds.copy(deep=False, data=data)
+
+    @round_signif.register
+    def _(da: xr.DataArray, p):
+        return da.copy(deep=False, data=round_signif(da.values, p))
 
 
 #===============================================================================
