@@ -64,11 +64,18 @@ _safe_define('g0', unyt.standard_gravity, tex_repr=R'\rm{g_0}')
 
 # Force
 _safe_define('kip', (1000.0, 'lbf'))
+_safe_define('kilogram_force', (unyt.standard_gravity_mks.value, 'N'))
+_safe_define('kgf', (unyt.standard_gravity_mks.value, 'N'))
+_safe_define('tonne_force', (1000.0, 'kgf'), prefixable=True)
+_safe_define('tf', (1000.0, 'kgf'), prefixable=True)
 
 # Mass
 _safe_define('blob', (1.0, 'lbf * s**2 / inch'))
 _safe_define('kblob', (1.0, 'kip * s**2 / inch'))
 _safe_define('kslug', (1.0, 'kip * s**2 / ft'))
+_safe_define('hyl', (1.0, 'kgf * s**2 / m'), prefixable=True)
+_safe_define('tonne', (1000.0, 'kg'), prefixable=True)
+_safe_define('t', (1000.0, 'kg'), prefixable=True)
 
 # Stress/pressure
 _safe_define('ksi', (1000.0, 'psi'))
