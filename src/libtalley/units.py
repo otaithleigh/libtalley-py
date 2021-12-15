@@ -1,13 +1,19 @@
 import logging
 import typing as t
 import uuid
+import warnings
 from functools import singledispatchmethod
 from math import isclose
 
+import numpy as np
 import unyt
 from unyt import unyt_array
 from unyt.dimensions import area, force, length
 from unyt.exceptions import IllDefinedUnitSystem, UnitConversionError
+
+from unyt.array import _sanitize_units_convert, LARGE_INPUT
+from unyt.unit_registry import _sanitize_unit_system
+from unyt.exceptions import MissingMKSCurrent, UnitsNotReducible
 
 try:
     import xarray as xr
@@ -15,6 +21,7 @@ except ImportError:
     xr = None
 
 __all__ = [
+    'assume_no_em',
     'check_consistent_unit_system',
     'ConsistentUnitSystemCheck',
     'convert',
@@ -679,3 +686,244 @@ def convert(value, units: UnitLike, registry: unyt.UnitRegistry = None):
     array([0.0030303 , 0.00454545, 0.00606061])
     """
     return process_unit_input(value, units, convert=True, registry=registry).v
+
+
+#===============================================================================
+# Replacement conversion methods
+#
+# These are faster unit conversion methods that don't support anything to do
+# with electromagnetic units; unyt's default methods spend a lot of time
+# checking if something needs special E&M handling.
+#
+# Last updated for unyt version 2.8.0.
+#===============================================================================
+
+
+class assume_no_em():
+    """Assert that no electromagnetic units are being used in the current
+    program. Replaces several unyt methods with faster versions that skip
+    E&M-related checks.
+
+    May be used as a context manager, restoring the standard methods afterwards.
+    """
+    def __init__(self):
+        unyt.Unit.get_base_equivalent = _Unit_get_base_equivalent_no_em
+        unyt.unyt_array.in_base = _unyt_array_in_base_no_em
+        unyt.unyt_array.in_units = _unyt_array_in_units_no_em
+        unyt.unyt_array.convert_to_units = _unyt_array_convert_to_units_no_em
+
+    def __enter__(self):
+        pass
+
+    def __exit__(self, *exc):
+        unyt.Unit.get_base_equivalent = _Unit_get_base_equivalent
+        unyt.unyt_array.in_base = _unyt_array_in_base
+        unyt.unyt_array.in_units = _unyt_array_in_units
+        unyt.unyt_array.convert_to_units = _unyt_array_convert_to_units
+
+
+# Store old methods
+_Unit_get_base_equivalent = unyt.Unit.get_base_equivalent
+_unyt_array_in_base = unyt.unyt_array.in_base
+_unyt_array_in_units = unyt.unyt_array.in_units
+_unyt_array_convert_to_units = unyt.unyt_array.convert_to_units
+
+
+def _Unit_get_base_equivalent_no_em(self, unit_system=None):
+    """Create and return dimensionally-equivalent units in a specified base.
+
+    **Assumes that no electromagnetic units are being used.**
+
+    >>> from unyt import g, cm
+    >>> (g/cm**3).get_base_equivalent('mks')
+    kg/m**3
+    >>> (g/cm**3).get_base_equivalent('solar')
+    Mearth/AU**3
+    """
+
+    unit_system = _sanitize_unit_system(unit_system, self)
+
+    try:
+        new_units = unit_system[self.dimensions]
+    except MissingMKSCurrent:
+        raise UnitsNotReducible(self.units, unit_system)
+    return unyt.Unit(new_units, registry=self.registry)
+
+
+def _unyt_array_in_base_no_em(self, unit_system=None):
+    """
+    Creates a copy of this array with the data in the specified unit
+    system, and returns it in that system's base units.
+
+    **Assumes that no electromagnetic units are being used.**
+
+    Parameters
+    ----------
+    unit_system : string, optional
+        The unit system to be used in the conversion. If not specified,
+        the configured default base units of are used (defaults to MKS).
+
+    Examples
+    --------
+    >>> from unyt import erg, s
+    >>> E = 2.5*erg/s
+    >>> print(E.in_base("mks"))
+    2.5e-07 W
+    """
+    to_units = self.units.get_base_equivalent(unit_system)
+    conv, offset = self.units.get_conversion_factor(to_units, self.dtype)
+
+    new_dtype = np.dtype("f" + str(self.dtype.itemsize))
+    conv = new_dtype.type(conv)
+    ret = self.v*conv
+    if offset:
+        ret = ret - offset
+    return type(self)(ret, to_units)
+
+
+def _unyt_array_in_units_no_em(self, units, equivalence=None, **kwargs):
+    """
+    Creates a copy of this array with the data converted to the
+    supplied units, and returns it.
+
+    Optionally, an equivalence can be specified to convert to an
+    equivalent quantity which is not in the same dimensions.
+
+    **Assumes that no electromagnetic units are being used.**
+
+    Parameters
+    ----------
+    units : Unit object or string
+        The units you want to get a new quantity in.
+    equivalence : string, optional
+        The equivalence you wish to use. To see which equivalencies
+        are supported for this object, try the ``list_equivalencies``
+        method. Default: None
+    kwargs: optional
+        Any additional keyword arguments are supplied to the
+        equivalence
+
+    Raises
+    ------
+    If the provided unit does not have the same dimensions as the array
+    this will raise a UnitConversionError
+
+    Examples
+    --------
+    >>> from unyt import c, gram
+    >>> m = 10*gram
+    >>> E = m*c**2
+    >>> print(E.in_units('erg'))
+    8.987551787368176e+21 erg
+    >>> print(E.in_units('J'))
+    898755178736817.6 J
+    """
+    units = _sanitize_units_convert(units, self.units.registry)
+    if equivalence is None:
+        new_units = units
+        (conversion_factor,
+         offset) = self.units.get_conversion_factor(new_units, self.dtype)
+
+        dsize = self.dtype.itemsize
+        if self.dtype.kind in ("u", "i"):
+            large = LARGE_INPUT.get(dsize, 0)
+            if large and np.any(np.abs(self.d) > large):
+                warnings.warn(
+                    "Overflow encountered while converting to units '%s'" %
+                    new_units,
+                    RuntimeWarning,
+                    stacklevel=2,
+                )
+        new_dtype = np.dtype("f" + str(dsize))
+        conversion_factor = new_dtype.type(conversion_factor)
+        ret = np.asarray(self.ndview*conversion_factor, dtype=new_dtype)
+        if offset:
+            np.subtract(ret, offset, ret)
+
+        try:
+            new_array = type(self)(ret,
+                                   new_units,
+                                   bypass_validation=True,
+                                   name=self.name)
+        except TypeError:
+            # subclasses might not take name as a kwarg
+            new_array = type(self)(ret, new_units, bypass_validation=True)
+
+        return new_array
+    else:
+        return self.to_equivalent(units, equivalence, **kwargs)
+
+
+def _unyt_array_convert_to_units_no_em(self, units, equivalence=None, **kwargs):
+    """
+    Convert the array to the given units in-place.
+
+    Optionally, an equivalence can be specified to convert to an
+    equivalent quantity which is not in the same dimensions.
+
+    **Assumes that no electromagnetic units are being used.**
+
+    Parameters
+    ----------
+    units : Unit object or string
+        The units you want to convert to.
+    equivalence : string, optional
+        The equivalence you wish to use. To see which equivalencies
+        are supported for this object, try the ``list_equivalencies``
+        method. Default: None
+    kwargs: optional
+        Any additional keyword arguments are supplied to the equivalence
+
+    Raises
+    ------
+    If the provided unit does not have the same dimensions as the array
+    this will raise a UnitConversionError
+
+    Examples
+    --------
+
+    >>> from unyt import cm, km
+    >>> length = [3000, 2000, 1000]*cm
+    >>> length.convert_to_units('m')
+    >>> print(length)
+    [30. 20. 10.] m
+    """
+    units = _sanitize_units_convert(units, self.units.registry)
+    if equivalence is None:
+        new_units = units
+        (conv_factor,
+         offset) = self.units.get_conversion_factor(new_units, self.dtype)
+
+        self.units = new_units
+        values = self.d
+        # if our dtype is an integer do the following somewhat awkward
+        # dance to change the dtype in-place. We can't use astype
+        # directly because that will create a copy and not update self
+        if self.dtype.kind in ("u", "i"):
+            # create a copy of the original data in floating point
+            # form, it's possible this may lose precision for very
+            # large integers
+            dsize = values.dtype.itemsize
+            new_dtype = "f" + str(dsize)
+            large = LARGE_INPUT.get(dsize, 0)
+            if large and np.any(np.abs(values) > large):
+                warnings.warn(
+                    "Overflow encountered while converting to units '%s'" %
+                    new_units,
+                    RuntimeWarning,
+                    stacklevel=2,
+                )
+            float_values = values.astype(new_dtype)
+            # change the dtypes in-place, this does not change the
+            # underlying memory buffer
+            values.dtype = new_dtype
+            self.dtype = new_dtype
+            # actually fill in the new float values now that our
+            # dtype is correct
+            np.copyto(values, float_values)
+        values *= conv_factor
+
+        if offset:
+            np.subtract(values, offset, values)
+    else:
+        self.convert_to_equivalent(units, equivalence, **kwargs)

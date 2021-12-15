@@ -20,7 +20,7 @@ requirements:
     - numpy>=1.15.0
     - pandas
     - tabulate
-    - conda-forge::unyt>=2.0
+    - conda-forge::unyt==2.8
 
 test:
   requires:
