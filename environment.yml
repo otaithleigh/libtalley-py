@@ -1,19 +1,20 @@
 name: libtalley
 channels:
-  - defaults
   - conda-forge
 dependencies:
-  - python >= 3.7
+  - python >= 3.8
   - numpy >= 1.15.0
   - pandas
-  - requests
-  - scipy >= 1.0.0
   - tabulate
   - unyt >= 2.8.0
+  # Optional packages
+  - matplotlib
+  - xarray
   # Development
-  - pylint
+  - pytest
   - yapf
   - ipython
+  - ipykernel
   - pip
   - pip:
     - '-e .'
