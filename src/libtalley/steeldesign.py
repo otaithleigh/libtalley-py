@@ -154,7 +154,7 @@ def _check_deprecated_material(name, grade):
 
 
 def _load_materials_db(filename):
-    with importlib.resources.path('libtalley', filename) as p:
+    with importlib.resources.path(__package__, filename) as p:
         material_df = pd.read_csv(p, index_col=['name', 'grade', 'application'])
     material_df.sort_index(inplace=True)
     return material_df
@@ -319,7 +319,7 @@ class _ShapesResource():
     name: str
     units: Dict[str, str]
     filename: str
-    package: str = 'libtalley'
+    package: str = __package__
 
     _registry: ClassVar[Dict[str, _ShapesResource]] = {}
 
@@ -336,7 +336,7 @@ class _ShapesResource():
         return resource
 
     @classmethod
-    def register(cls, key, name, units, filename, package='libtalley'):
+    def register(cls, key, name, units, filename, package=__package__):
         if key in cls._registry:
             raise ValueError(f'resource with key {key!r} is already registered')
 

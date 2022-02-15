@@ -124,7 +124,7 @@ class Color:
 
     @classmethod
     def _load_color_database(cls):
-        with importlib.resources.open_text('libtalley', 'colors.json') as f:
+        with importlib.resources.open_text(__package__, 'colors.json') as f:
             cls._color_database = json.load(f)
 
     @classmethod
