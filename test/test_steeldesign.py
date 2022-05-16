@@ -1,4 +1,5 @@
 import unyt
+from pytest import raises
 
 import libtalley.steeldesign as steel
 
@@ -34,3 +35,13 @@ def test_material_lookup_slice_match_2():
     assert unyt.allclose_units(material.Fu, 65*unyt.ksi)
     assert unyt.allclose_units(material.Ry, 1.1)
     assert unyt.allclose_units(material.Rt, 1.1)
+
+
+def test_material_lookup_too_many_results():
+    with raises(ValueError):
+        steel.SteelMaterial.from_name('A500')
+
+
+def test_material_lookup_no_results():
+    with raises(ValueError):
+        steel.SteelMaterial.from_name('ThisIsNotAMaterial')

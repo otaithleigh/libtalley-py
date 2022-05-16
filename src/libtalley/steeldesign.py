@@ -98,34 +98,36 @@ class SteelMaterial():
         Raises
         ------
         ValueError
-            If multiple materials match the provided information. For example,
-            requesting an A500 steel also requires specifying a grade (A or B).
+            - If no materials are found.
+            - If multiple materials match the provided information. For example,
+              requesting an A500 steel also requires specifying a grade (A or
+              B).
         """
         name, grade = _check_deprecated_material(name, grade)
 
-        def normalize(input):
-            if pd.isna(input):
-                return slice(None)
-            else:
-                return str(input).casefold()
+        # Construct database query
+        query_name = str(name).casefold()
+        query_list = [f'name == {query_name!r}']
+        if grade is not None:
+            query_grade = str(grade).casefold()
+            query_list.append(f'grade == {query_grade!r}')
+        if application is not None:
+            query_application = str(application).casefold()
+            query_list.append(f'application == {query_application!r}')
+        query = ' & '.join(query_list)
 
-        material = cls._get_materials_db().loc[normalize(name),
-                                               normalize(grade),
-                                               normalize(application)]
+        # Lookup -- should get a DataFrame of length 1.
+        material = cls._get_materials_db().query(query)
+        if len(material) == 0:
+            raise ValueError('No materials found')
+        elif len(material) != 1:
+            raise ValueError(f'Multiple materials found:\n{material}')
 
-        # Lookup succeeds if we get a Series (exact indexes) or if we get a
-        # DataFrame of length 1 (one or more indexes were sliced, but still only
-        # one result returned).
-        if isinstance(material, pd.DataFrame):
-            if len(material) != 1:
-                raise ValueError('Multiple materials found: specify grade '
-                                 'and/or application to narrow search')
-            material = material.iloc[0]
-
-        name, grade, application = material.name
+        data = material.iloc[0]
+        name, grade, application = data.name
         display_grade = '' if pd.isna(grade) else f' Gr. {grade}'
         display_name = f'{name}{display_grade} ({application})'
-        return cls(display_name.title(), **material)
+        return cls(display_name.title(), **data)
 
     @classmethod
     def available_materials(cls):
