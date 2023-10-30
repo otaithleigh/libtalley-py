@@ -70,7 +70,7 @@ class SteelMaterial:
 
         if self.Fy > self.Fu:
             raise SteelError(
-                'SteelMaterial: yield strength must' ' be less than tensile strength'
+                'SteelMaterial: yield strength must be less than tensile strength'
             )
 
     @property

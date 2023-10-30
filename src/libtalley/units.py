@@ -269,7 +269,7 @@ def create_unit_system(
                 unit_obj = unyt.Unit(unit)
                 if unit_obj.dimensions != dim_obj:
                     raise IllDefinedUnitSystem(
-                        f'{dim} [{dim_obj}] -> {unit_obj} ' f'[{unit_obj.dimensions}]'
+                        f'{dim} [{dim_obj}] -> {unit_obj} [{unit_obj.dimensions}]'
                     )
 
             system[dim] = unit
@@ -585,7 +585,7 @@ class UnitInputParser:
     def _parse_internal(self, in_, units=None) -> unyt_array:
         if units is None:
             raise ValueError(
-                'No default units set; cannot parse object ' f'without units {in_!r}'
+                f'No default units set; cannot parse object without units {in_!r}'
             )
 
         return unyt_array(in_, units, registry=self.registry)
