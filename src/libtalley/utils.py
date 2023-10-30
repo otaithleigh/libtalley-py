@@ -24,9 +24,9 @@ __all__ = [
 ]
 
 
-#===============================================================================
+# ===============================================================================
 # Math
-#===============================================================================
+# ===============================================================================
 def is_even(val):
     """Return ``True`` if even, ``False`` if odd."""
     return not val % 2
@@ -50,14 +50,13 @@ def all_same_sign(iterable: t.Iterable) -> bool:
     iterable
         An iterable item with numeric values.
     """
-    v = (all(item >= 0 for item in iterable)
-         or all(item < 0 for item in iterable))
+    v = all(item >= 0 for item in iterable) or all(item < 0 for item in iterable)
     return v
 
 
-#---------------------------------------
+# ---------------------------------------
 # Round to significiant figures
-#---------------------------------------
+# ---------------------------------------
 @functools.singledispatch
 def round_signif(a, p):
     """Round numeric array a to significant figures p.
@@ -72,9 +71,9 @@ def round_signif(a, p):
     Source: https://stackoverflow.com/a/59888924, with modifications
     """
     a = np.asanyarray(a)
-    a_positive = np.where(np.isfinite(a) & (a != 0), np.abs(a), 10**(p - 1))
-    mags = 10**(p - 1 - np.floor(np.log10(a_positive)))
-    return np.round(a*mags)/mags
+    a_positive = np.where(np.isfinite(a) & (a != 0), np.abs(a), 10 ** (p - 1))
+    mags = 10 ** (p - 1 - np.floor(np.log10(a_positive)))
+    return np.round(a * mags) / mags
 
 
 @round_signif.register
@@ -98,10 +97,7 @@ if xr is not None:
 
     @round_signif.register
     def _(ds: xr.Dataset, p):
-        data = {
-            name: round_signif(var, p)
-            for name, var in ds.data_vars.items()
-        }
+        data = {name: round_signif(var, p) for name, var in ds.data_vars.items()}
         return ds.copy(deep=False, data=data)
 
     @round_signif.register
@@ -109,9 +105,9 @@ if xr is not None:
         return da.copy(deep=False, data=round_signif(da.values, p))
 
 
-#===============================================================================
+# ===============================================================================
 # Miscellany
-#===============================================================================
+# ===============================================================================
 def filename_noext(path: str) -> str:
     """Get the name of a file without the extension.
 
@@ -129,12 +125,9 @@ def filename_noext(path: str) -> str:
     return os.path.splitext(os.path.basename(path))[0]
 
 
-def print_table(headers,
-                data,
-                datafmt='cols',
-                tablefmt='pipe',
-                stream=sys.stdout,
-                **kwargs) -> str:
+def print_table(
+    headers, data, datafmt='cols', tablefmt='pipe', stream=sys.stdout, **kwargs
+) -> str:
     """Print a neatly-formatted table.
 
     Parameters
@@ -161,23 +154,20 @@ def print_table(headers,
     # Check input
     if datafmt.lower() == 'cols':
         if len(headers) != len(data):
-            raise ValueError("Number of headers must equal number of columns.")
+            raise ValueError('Number of headers must equal number of columns.')
 
         lengths_of_cols = [len(col) for col in data]
         for length in lengths_of_cols:
             if lengths_of_cols[0] != length:
-                raise ValueError("Columns must be of equal length.")
+                raise ValueError('Columns must be of equal length.')
 
         tabular_data = np.array(data).transpose().tolist()
     elif datafmt.lower() == 'rows':
         tabular_data = data
     else:
-        raise ValueError(f"Unrecognized data format: {datafmt}")
+        raise ValueError(f'Unrecognized data format: {datafmt}')
 
-    tabulated = tabulate(tabular_data,
-                         headers=headers,
-                         tablefmt=tablefmt,
-                         **kwargs)
+    tabulated = tabulate(tabular_data, headers=headers, tablefmt=tablefmt, **kwargs)
     print(tabulated, file=stream)
 
     return tabulated

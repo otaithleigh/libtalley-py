@@ -18,13 +18,13 @@ def load_optotrak(file, delimiter='\t', max_rows=None) -> pd.DataFrame:
         Maximum number of data rows to read. Use None to read all rows.
         (default: None)
     """
-    #---------------------------------------------------------------------------
+    # ---------------------------------------------------------------------------
     # Position data
     #
     # Load the numeric data, replacing missing values with NaN. The final column
     # of data has an extraneous tab; this makes 'genfromtxt' think there's an
     # extra column that isn't there.
-    #---------------------------------------------------------------------------
+    # ---------------------------------------------------------------------------
     data = np.genfromtxt(
         file,
         delimiter=delimiter,
@@ -39,11 +39,11 @@ def load_optotrak(file, delimiter='\t', max_rows=None) -> pd.DataFrame:
     y = data[:, 2::3]
     z = data[:, 3::3]
 
-    #---------------------------------------------------------------------------
+    # ---------------------------------------------------------------------------
     # Marker names
     #
     # Read marker names from the unique values of the header.
-    #---------------------------------------------------------------------------
+    # ---------------------------------------------------------------------------
     header = pd.Series(
         np.loadtxt(
             file,
@@ -51,16 +51,17 @@ def load_optotrak(file, delimiter='\t', max_rows=None) -> pd.DataFrame:
             skiprows=4,
             max_rows=1,
             dtype=object,
-        )[1:])  # Drop 'Frame'
+        )[1:]  # Drop 'Frame'
+    )
     # Split '<name> xyz', select '<name>' from resulting lists, then get uniques
     # '<name> xyz' -> ['<name>', 'xyz'] -> '<name>' -> unique
     names = header.str.split(' ').apply(lambda l: l[0]).unique()
 
-    #---------------------------------------------------------------------------
+    # ---------------------------------------------------------------------------
     # Metadata
     #
     # Number of frames, sample rate, units
-    #---------------------------------------------------------------------------
+    # ---------------------------------------------------------------------------
     metadata = dict(np.loadtxt(file, delimiter=': ', max_rows=3, dtype=object))
 
     data = pd.DataFrame(
@@ -69,8 +70,7 @@ def load_optotrak(file, delimiter='\t', max_rows=None) -> pd.DataFrame:
             'y': y.flat,
             'z': z.flat,
         },
-        index=pd.MultiIndex.from_product([frame, names],
-                                         names=['Frame', 'Name']),
+        index=pd.MultiIndex.from_product([frame, names], names=['Frame', 'Name']),
     )
     data.attrs['Count'] = int(metadata['Number of frames'])
     data.attrs['Frequency'] = float(metadata['Frequency'])

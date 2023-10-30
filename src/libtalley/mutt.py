@@ -7,7 +7,7 @@ import subprocess as sub
 
 def send(to, subject, message, attach=None):
     """Send an email using mutt.
-    
+
     Parameters
     ----------
     to : List[str]

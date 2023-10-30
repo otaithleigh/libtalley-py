@@ -3,7 +3,7 @@
 
 def diff(f, x, n=1, partial=False):
     """Derivative representation.
-    
+
     Parameters
     ----------
     f:
@@ -18,9 +18,9 @@ def diff(f, x, n=1, partial=False):
     if partial:
         differ = R'\partial'
     else:
-        differ = Rf"\mathrm{{d}}"
+        differ = Rf'\mathrm{{d}}'
     if n > 1:
-        level = f"^{n}"
+        level = f'^{n}'
     else:
         level = ''
 

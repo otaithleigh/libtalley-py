@@ -15,9 +15,11 @@ __all__ = [
 ]
 
 
-def set_limits_to_major_ticks(ax: Axes = None,
-                              which: t.Literal['x', 'y', 'both'] = 'both',
-                              inclusive: bool = False):
+def set_limits_to_major_ticks(
+    ax: Axes = None,
+    which: t.Literal['x', 'y', 'both'] = 'both',
+    inclusive: bool = False,
+):
     """Set axis limits to the closest major ticks that bound the data.
 
     Parameters
@@ -57,8 +59,7 @@ class GridParameters(t.NamedTuple):
     figsize: tuple[float, float]
 
 
-def calc_grid(nplots: int, plot_width: float, plot_height: float,
-              avail_width: float):
+def calc_grid(nplots: int, plot_width: float, plot_height: float, avail_width: float):
     """Calculate grid parameters for a given number of figures and desired
     subplot size.
 
@@ -84,23 +85,25 @@ def calc_grid(nplots: int, plot_width: float, plot_height: float,
         nrows = 1
         ncols = nplots
     else:
-        nrows = (nplots // max_ncols)
+        nrows = nplots // max_ncols
         if nplots % max_ncols:
             nrows += 1
         ncols = max_ncols
 
-    return GridParameters(nrows, ncols, (ncols*plot_width, nrows*plot_height))
+    return GridParameters(nrows, ncols, (ncols * plot_width, nrows * plot_height))
 
 
-def multicolor_line(x,
-                    y,
-                    c=None,
-                    vmin=None,
-                    vmax=None,
-                    levels=None,
-                    cmap=None,
-                    ax: t.Optional[Axes] = None,
-                    **lc_kwargs):
+def multicolor_line(
+    x,
+    y,
+    c=None,
+    vmin=None,
+    vmax=None,
+    levels=None,
+    cmap=None,
+    ax: t.Optional[Axes] = None,
+    **lc_kwargs,
+):
     """Plot a line as multiple segments, so that it varies in color from start
     to finish.
 
@@ -139,15 +142,15 @@ def multicolor_line(x,
     - Each segment can only have one color. This may affect clarity for lines
       that have segments of non-uniform length.
     """
-    #--------------------------------------------
+    # --------------------------------------------
     # Get axes
-    #--------------------------------------------
+    # --------------------------------------------
     if ax is None:
         ax = plt.gca()
 
-    #--------------------------------------------
+    # --------------------------------------------
     # Validate inputs
-    #--------------------------------------------
+    # --------------------------------------------
     x: np.ndarray = np.asarray(x)
     y: np.ndarray = np.asarray(y)
     if c is None:
@@ -158,17 +161,17 @@ def multicolor_line(x,
     if x.ndim != 1 or y.ndim != 1 or c.ndim != 1:
         raise ValueError('x, y, and c must all be 1-d')
 
-    #--------------------------------------------
+    # --------------------------------------------
     # Create segments for LineCollection
-    #--------------------------------------------
+    # --------------------------------------------
     points = np.empty((c.size, 1, 2))
     points[:, 0, 0] = x
     points[:, 0, 1] = y
     segments = np.concatenate([points[:-1], points[1:]], axis=1)
 
-    #--------------------------------------------
+    # --------------------------------------------
     # Create normalizer for colormap
-    #--------------------------------------------
+    # --------------------------------------------
     vmin = c.min() if vmin is None else vmin
     vmax = c.max() if vmax is None else vmax
     if levels is None:
@@ -183,14 +186,10 @@ def multicolor_line(x,
         ncolors = plt.get_cmap(cmap).N
         norm = BoundaryNorm(boundaries, ncolors)
 
-    #--------------------------------------------
+    # --------------------------------------------
     # Create and add LineCollection object
-    #--------------------------------------------
-    lc = LineCollection(segments,
-                        norm=norm,
-                        cmap=cmap,
-                        capstyle='round',
-                        **lc_kwargs)
+    # --------------------------------------------
+    lc = LineCollection(segments, norm=norm, cmap=cmap, capstyle='round', **lc_kwargs)
     lc.set_array(c)
     ax.add_collection(lc)
 

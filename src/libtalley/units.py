@@ -40,16 +40,16 @@ __all__ = [
 
 logger = logging.getLogger(__name__)
 
-#===============================================================================
+# ===============================================================================
 # Typing
-#===============================================================================
+# ===============================================================================
 UnitLike = t.Union[str, unyt.Unit]
 SystemLike = t.Union[str, unyt.UnitSystem]
 
 
-#===============================================================================
+# ===============================================================================
 # Units and dimensions
-#===============================================================================
+# ===============================================================================
 def _safe_define(symbol: str, *args, **kwargs):
     # unyt occasionally adds new built-ins, and throws an error for already
     # defined symbols. Log the error and keep going.
@@ -82,16 +82,16 @@ _safe_define('ksi', (1000.0, 'psi'))
 _safe_define('psf', (1.0, 'lbf / ft**2'))
 _safe_define('ksf', (1000.0, 'psf'))
 
-#---------------------------------------
+# ---------------------------------------
 # Dimensions
-#---------------------------------------
-unyt.dimensions.stress = force/area
-unyt.dimensions.moment = force*length
+# ---------------------------------------
+unyt.dimensions.stress = force / area
+unyt.dimensions.moment = force * length
 
 
-#===============================================================================
+# ===============================================================================
 # Unit systems
-#===============================================================================
+# ===============================================================================
 class UnitSystemError(Exception):
     """Base class for unit-system-related errors."""
 
@@ -102,12 +102,14 @@ class UnitSystemConsistencyError(UnitSystemError):
 
 class UnitSystemExistsError(UnitSystemError):
     """Raised when trying to override a unit system that already exists."""
+
     def __init__(self, name) -> None:
         super().__init__(f'Unit system with name {name!r} already exists')
 
 
 class UnitSystemNotFoundError(UnitSystemError):
     """Raised when a unit system is not found in the registry."""
+
     def __init__(self, name):
         super().__init__(f'Unit system {name!r} not found in registry')
 
@@ -131,19 +133,21 @@ def get_unit_system(system: SystemLike) -> unyt.UnitSystem:
         raise UnitSystemNotFoundError(system) from exc
 
 
-def create_unit_system(length: UnitLike,
-                       mass: UnitLike,
-                       time: UnitLike,
-                       temperature: UnitLike = None,
-                       angle: UnitLike = None,
-                       current_mks: UnitLike = None,
-                       luminous_intensity: UnitLike = None,
-                       logarithmic: UnitLike = None,
-                       name: str = None,
-                       registry: t.Optional[unyt.UnitRegistry] = None,
-                       consistent: bool = False,
-                       strict_dims: bool = True,
-                       **convenience_units: UnitLike) -> unyt.UnitSystem:
+def create_unit_system(
+    length: UnitLike,
+    mass: UnitLike,
+    time: UnitLike,
+    temperature: UnitLike = None,
+    angle: UnitLike = None,
+    current_mks: UnitLike = None,
+    luminous_intensity: UnitLike = None,
+    logarithmic: UnitLike = None,
+    name: str = None,
+    registry: t.Optional[unyt.UnitRegistry] = None,
+    consistent: bool = False,
+    strict_dims: bool = True,
+    **convenience_units: UnitLike,
+) -> unyt.UnitSystem:
     """
     Create a new unit system.
 
@@ -265,8 +269,8 @@ def create_unit_system(length: UnitLike,
                 unit_obj = unyt.Unit(unit)
                 if unit_obj.dimensions != dim_obj:
                     raise IllDefinedUnitSystem(
-                        f'{dim} [{dim_obj}] -> {unit_obj} '
-                        f'[{unit_obj.dimensions}]')
+                        f'{dim} [{dim_obj}] -> {unit_obj} ' f'[{unit_obj.dimensions}]'
+                    )
 
             system[dim] = unit
 
@@ -276,7 +280,8 @@ def create_unit_system(length: UnitLike,
             if not check.is_consistent:
                 raise UnitSystemConsistencyError(
                     f'Inconsistent unit for dimension {check.bad_dim!r}: '
-                    f'1.0 {check.bad_unit} = {check.bad_base}')
+                    f'1.0 {check.bad_unit} = {check.bad_base}'
+                )
     except:
         # Remove bad system from registry
         del unyt.unit_systems.unit_system_registry[name]
@@ -298,6 +303,7 @@ class ConsistentUnitSystemCheck(t.NamedTuple):
     bad_base : unyt.unyt_quantity | None
         If not consistent, the quantity `bad_dim * bad_unit` in base units.
     """
+
     is_consistent: bool
     bad_dim: t.Optional[str]
     bad_unit: t.Optional[unyt.Unit]
@@ -324,18 +330,17 @@ def check_consistent_unit_system(system: unyt.UnitSystem):
 
     # Create unit system without convenience units
     temp_name = str(uuid.uuid4())
-    system_no_conv = create_unit_system(**base_units,
-                                        name=temp_name,
-                                        registry=system.registry)
+    system_no_conv = create_unit_system(
+        **base_units, name=temp_name, registry=system.registry
+    )
 
     convenience_units = {
-        dim: system[dim]
-        for dim in system._dims if dim not in base_dims
+        dim: system[dim] for dim in system._dims if dim not in base_dims
     }
 
     try:
         for dim, unit in convenience_units.items():
-            q = 1.0*unit
+            q = 1.0 * unit
             q.convert_to_base(system_no_conv)
             if not isclose(q.v, 1.0):
                 is_consistent = False
@@ -354,9 +359,9 @@ def check_consistent_unit_system(system: unyt.UnitSystem):
     return ConsistentUnitSystemCheck(is_consistent, bad_dim, bad_unit, bad_base)
 
 
-#-------------------------------------------------------------------
+# -------------------------------------------------------------------
 # Consistent unit systems for typical use, e.g., in OpenSees
-#-------------------------------------------------------------------
+# -------------------------------------------------------------------
 uscs_system = create_unit_system(
     name='uscs',
     length='inch',
@@ -379,9 +384,9 @@ metric_system = create_unit_system(
 )
 
 
-#---------------------------------------
+# ---------------------------------------
 # Short repr for UnitSystems
-#---------------------------------------
+# ---------------------------------------
 def _UnitSystem_inline_repr(self):
     clsname = self.__class__.__name__
     length = self['length']
@@ -394,17 +399,20 @@ if not hasattr(unyt.UnitSystem, '_inline_repr'):
     unyt.UnitSystem._inline_repr = _UnitSystem_inline_repr
 
 
-#===============================================================================
+# ===============================================================================
 # Utility functions
-#===============================================================================
-class UnitInputParser():
+# ===============================================================================
+class UnitInputParser:
     """Parse inputs that may or may not have units."""
-    def __init__(self,
-                 default_units: UnitLike = None,
-                 convert: bool = False,
-                 check_dims: bool = False,
-                 copy: bool = True,
-                 registry: unyt.UnitRegistry = None):
+
+    def __init__(
+        self,
+        default_units: UnitLike = None,
+        convert: bool = False,
+        check_dims: bool = False,
+        copy: bool = True,
+        registry: unyt.UnitRegistry = None,
+    ):
         """
         Parameters
         ----------
@@ -443,9 +451,9 @@ class UnitInputParser():
         ]
         return f'{clsname}(' + ', '.join(attrs) + ')'
 
-    #===========================================================================
+    # ===========================================================================
     # Units handling
-    #===========================================================================
+    # ===========================================================================
     @property
     def default_units(self) -> t.Union[unyt.Unit, None]:
         """Default units to use if inputs don't have units associated already.
@@ -469,9 +477,9 @@ class UnitInputParser():
             units = unyt.Unit(units, registry=self.registry)
         return units
 
-    #===========================================================================
+    # ===========================================================================
     # Dims checking
-    #===========================================================================
+    # ===========================================================================
     def _get_units(self, q) -> unyt.Unit:
         """Get the units of an object."""
         try:
@@ -491,9 +499,9 @@ class UnitInputParser():
         if dim_a != dim_b:
             raise UnitConversionError(units_a, dim_a, units_b, dim_b)
 
-    #===========================================================================
+    # ===========================================================================
     # Parsing
-    #===========================================================================
+    # ===========================================================================
     def __call__(self, in_, units: t.Optional[UnitLike] = None):
         return self.parse(in_, units)
 
@@ -564,7 +572,7 @@ class UnitInputParser():
 
         return q
 
-    #--------------------------------------------------------
+    # --------------------------------------------------------
     # Parse internal
     #
     # These methods define how 'parse' processes different
@@ -572,12 +580,13 @@ class UnitInputParser():
     # data, if possible, and they should always return
     # unyt_array, not unyt_quantity (scalarfication is
     # handled inside `parse`).
-    #--------------------------------------------------------
+    # --------------------------------------------------------
     @singledispatchmethod
     def _parse_internal(self, in_, units=None) -> unyt_array:
         if units is None:
-            raise ValueError('No default units set; cannot parse object '
-                             f'without units {in_!r}')
+            raise ValueError(
+                'No default units set; cannot parse object ' f'without units {in_!r}'
+            )
 
         return unyt_array(in_, units, registry=self.registry)
 
@@ -601,12 +610,14 @@ class UnitInputParser():
             return self._parse_internal(value, units)
 
 
-def process_unit_input(in_,
-                       default_units: UnitLike = None,
-                       convert: bool = False,
-                       check_dims: bool = False,
-                       copy: bool = True,
-                       registry: unyt.UnitRegistry = None) -> unyt_array:
+def process_unit_input(
+    in_,
+    default_units: UnitLike = None,
+    convert: bool = False,
+    check_dims: bool = False,
+    copy: bool = True,
+    registry: unyt.UnitRegistry = None,
+) -> unyt_array:
     """Process an input value that may or may not have units.
 
     If the input value doesn't have units, assumes the input is in the requested
@@ -659,11 +670,13 @@ def process_unit_input(in_,
         If the units of `in_` are not compatible with `default_units`, and
         either `convert` or `check_dims` are true.
     """
-    parser = UnitInputParser(default_units=default_units,
-                             convert=convert,
-                             check_dims=check_dims,
-                             copy=copy,
-                             registry=registry)
+    parser = UnitInputParser(
+        default_units=default_units,
+        convert=convert,
+        check_dims=check_dims,
+        copy=copy,
+        registry=registry,
+    )
     return parser.parse(in_)
 
 
@@ -695,7 +708,7 @@ def convert(value, units: UnitLike, registry: unyt.UnitRegistry = None):
     return process_unit_input(value, units, convert=True, registry=registry).v
 
 
-#===============================================================================
+# ===============================================================================
 # Replacement conversion methods
 #
 # These are faster unit conversion methods that don't support anything to do
@@ -703,16 +716,17 @@ def convert(value, units: UnitLike, registry: unyt.UnitRegistry = None):
 # checking if something needs special E&M handling.
 #
 # Last updated for unyt version 2.8.0.
-#===============================================================================
+# ===============================================================================
 
 
-class assume_no_em():
+class assume_no_em:
     """Assert that no electromagnetic units are being used in the current
     program. Replaces several unyt methods with faster versions that skip
     E&M-related checks.
 
     May be used as a context manager, restoring the standard methods afterwards.
     """
+
     def __init__(self):
         unyt.Unit.get_base_equivalent = _Unit_get_base_equivalent_no_em
         unyt.unyt_array.in_base = _unyt_array_in_base_no_em
@@ -780,9 +794,9 @@ def _unyt_array_in_base_no_em(self, unit_system=None):
     to_units = self.units.get_base_equivalent(unit_system)
     conv, offset = self.units.get_conversion_factor(to_units, self.dtype)
 
-    new_dtype = np.dtype("f" + str(self.dtype.itemsize))
+    new_dtype = np.dtype('f' + str(self.dtype.itemsize))
     conv = new_dtype.type(conv)
-    ret = self.v*conv
+    ret = self.v * conv
     if offset:
         ret = ret - offset
     return type(self)(ret, to_units)
@@ -828,30 +842,29 @@ def _unyt_array_in_units_no_em(self, units, equivalence=None, **kwargs):
     units = _sanitize_units_convert(units, self.units.registry)
     if equivalence is None:
         new_units = units
-        (conversion_factor,
-         offset) = self.units.get_conversion_factor(new_units, self.dtype)
+        (conversion_factor, offset) = self.units.get_conversion_factor(
+            new_units, self.dtype
+        )
 
         dsize = self.dtype.itemsize
-        if self.dtype.kind in ("u", "i"):
+        if self.dtype.kind in ('u', 'i'):
             large = LARGE_INPUT.get(dsize, 0)
             if large and np.any(np.abs(self.d) > large):
                 warnings.warn(
-                    "Overflow encountered while converting to units '%s'" %
-                    new_units,
+                    "Overflow encountered while converting to units '%s'" % new_units,
                     RuntimeWarning,
                     stacklevel=2,
                 )
-        new_dtype = np.dtype("f" + str(dsize))
+        new_dtype = np.dtype('f' + str(dsize))
         conversion_factor = new_dtype.type(conversion_factor)
-        ret = np.asarray(self.ndview*conversion_factor, dtype=new_dtype)
+        ret = np.asarray(self.ndview * conversion_factor, dtype=new_dtype)
         if offset:
             np.subtract(ret, offset, ret)
 
         try:
-            new_array = type(self)(ret,
-                                   new_units,
-                                   bypass_validation=True,
-                                   name=self.name)
+            new_array = type(self)(
+                ret, new_units, bypass_validation=True, name=self.name
+            )
         except TypeError:
             # subclasses might not take name as a kwarg
             new_array = type(self)(ret, new_units, bypass_validation=True)
@@ -898,25 +911,23 @@ def _unyt_array_convert_to_units_no_em(self, units, equivalence=None, **kwargs):
     units = _sanitize_units_convert(units, self.units.registry)
     if equivalence is None:
         new_units = units
-        (conv_factor,
-         offset) = self.units.get_conversion_factor(new_units, self.dtype)
+        (conv_factor, offset) = self.units.get_conversion_factor(new_units, self.dtype)
 
         self.units = new_units
         values = self.d
         # if our dtype is an integer do the following somewhat awkward
         # dance to change the dtype in-place. We can't use astype
         # directly because that will create a copy and not update self
-        if self.dtype.kind in ("u", "i"):
+        if self.dtype.kind in ('u', 'i'):
             # create a copy of the original data in floating point
             # form, it's possible this may lose precision for very
             # large integers
             dsize = values.dtype.itemsize
-            new_dtype = "f" + str(dsize)
+            new_dtype = 'f' + str(dsize)
             large = LARGE_INPUT.get(dsize, 0)
             if large and np.any(np.abs(values) > large):
                 warnings.warn(
-                    "Overflow encountered while converting to units '%s'" %
-                    new_units,
+                    "Overflow encountered while converting to units '%s'" % new_units,
                     RuntimeWarning,
                     stacklevel=2,
                 )

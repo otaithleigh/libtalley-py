@@ -26,30 +26,28 @@ def test_parse_units_with_default():
 
 def test_parse_units_check_dims_success():
     desired = unyt.unyt_array([1, 2, 3, 4], 'ft')
-    actual = process_unit_input(([1, 2, 3, 4], 'ft'),
-                                default_units='inch',
-                                check_dims=True)
+    actual = process_unit_input(
+        ([1, 2, 3, 4], 'ft'), default_units='inch', check_dims=True
+    )
     assert_allclose_units(actual, desired)
 
 
 def test_parse_units_check_dims_fail():
     with pytest.raises(UnitConversionError):
-        process_unit_input(([1, 2, 3, 4], 'ft'),
-                           default_units='kip',
-                           check_dims=True)
+        process_unit_input(([1, 2, 3, 4], 'ft'), default_units='kip', check_dims=True)
 
 
 def test_parse_units_convert_success():
     desired = unyt.unyt_array([12, 24, 36, 48], 'inch')
-    actual = process_unit_input(([1, 2, 3, 4], 'ft'),
-                                default_units='inch',
-                                convert=True)
+    actual = process_unit_input(
+        ([1, 2, 3, 4], 'ft'), default_units='inch', convert=True
+    )
     assert_allclose_units(actual, desired)
 
 
 def test_parse_units_bad_tuple():
     with pytest.raises(ValueError):
-        process_unit_input(([1, 2, 3, 4], ))
+        process_unit_input(([1, 2, 3, 4],))
 
 
 def test_parse_units_already_unyt():
@@ -81,6 +79,7 @@ def test_parse_units_no_copy_array():
 
 
 if xr is not None:
+
     def test_parse_units_xarray():
         in_ = xr.DataArray([1, 2, 3, 4], attrs={'units': 'mm'})
         actual = process_unit_input(in_)

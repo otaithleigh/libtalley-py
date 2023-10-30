@@ -47,15 +47,17 @@ def show_var(name, value, units=None, *, boxed=False, fmt='#.3g'):
     display(Math(eqn))
 
 
-def show_matrix(name,
-                array,
-                units=None,
-                *,
-                boxed=False,
-                style='b',
-                vector_style='column',
-                nsd=3,
-                suppress=True):
+def show_matrix(
+    name,
+    array,
+    units=None,
+    *,
+    boxed=False,
+    style='b',
+    vector_style='column',
+    nsd=3,
+    suppress=True,
+):
     """Display a NumPy array as a vector/matrix.
 
     Parameters
@@ -104,8 +106,10 @@ def show_matrix(name,
         try:
             new_shape = vector_styles[vector_style]
         except KeyError:
-            raise ValueError(f'vector_style {vector_style!r} must be one '
-                             f'of {set(vector_styles.keys())}')
+            raise ValueError(
+                f'vector_style {vector_style!r} must be one '
+                f'of {set(vector_styles.keys())}'
+            )
         array = array.reshape(new_shape)
 
     # Rounding
@@ -116,11 +120,13 @@ def show_matrix(name,
             array = array.round(10)
 
     rows = [' & '.join(row) for row in array.astype('U')]
-    matrix = ''.join([
-        r'\begin{%smatrix}' % style,
-        r' \\ '.join(rows),
-        r'\end{%smatrix}' % style,
-    ])
+    matrix = ''.join(
+        [
+            r'\begin{%smatrix}' % style,
+            r' \\ '.join(rows),
+            r'\end{%smatrix}' % style,
+        ]
+    )
 
     show_var(name, matrix, units=units, boxed=boxed, fmt='')
 

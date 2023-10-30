@@ -6,11 +6,12 @@ import unyt
 from .units import create_unit_system, get_unit_system
 
 
-#---------------------------------------
+# ---------------------------------------
 # Unit systems
-#---------------------------------------
+# ---------------------------------------
 class Units(int, Enum):
     """Enumeration for available units in SAP."""
+
     lb_in_F = 1
     lb_ft_F = 2
     kip_in_F = 3
@@ -38,18 +39,18 @@ class Units(int, Enum):
     def __getitem__(self, key):
         return self.system[key]
 
-    #---------------------------------
+    # ---------------------------------
     # Physical constants
-    #---------------------------------
+    # ---------------------------------
     @cached_property
     def g0(self):
         """Standard acceleration due to gravity."""
         g0 = unyt.physical_constants.standard_gravity
-        return g0.to(self.length/self.system['time']**2)
+        return g0.to(self.length / self.system['time'] ** 2)
 
-    #---------------------------------
+    # ---------------------------------
     # Units, base and derived
-    #---------------------------------
+    # ---------------------------------
     @cached_property
     def system(self):
         """Unit system associated with this enum."""
@@ -57,7 +58,7 @@ class Units(int, Enum):
 
     @cached_property
     def acceleration(self) -> unyt.Unit:
-        return self.length/self.time**2
+        return self.length / self.time**2
 
     @cached_property
     def area(self) -> unyt.Unit:
@@ -81,15 +82,15 @@ class Units(int, Enum):
 
     @cached_property
     def moment(self) -> unyt.Unit:
-        return self.force*self.length
+        return self.force * self.length
 
     @cached_property
     def rotational_stiffness(self) -> unyt.Unit:
-        return self.force*self.length/unyt.radian
+        return self.force * self.length / unyt.radian
 
     @cached_property
     def shear_stiffness(self) -> unyt.Unit:
-        return self.force/self.length
+        return self.force / self.length
 
     @cached_property
     def stress(self) -> unyt.Unit:
@@ -101,7 +102,7 @@ class Units(int, Enum):
 
     @cached_property
     def velocity(self) -> unyt.Unit:
-        return self.length/self.time
+        return self.length / self.time
 
 
 lb_in_F_system = create_unit_system(

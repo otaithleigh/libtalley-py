@@ -2,7 +2,7 @@ import textwrap
 import warnings
 
 
-class Boxer():
+class Boxer:
     """Class for creating plaintext "boxes".
 
     A box is defined by several parameters, laid out so::
@@ -15,15 +15,10 @@ class Boxer():
         <left><lpad><------- text -------><rpad><right>
         <left><------------- rule -------------><final>
     """
-    def __init__(self,
-                 left,
-                 right,
-                 rule,
-                 pad=' ',
-                 first=None,
-                 final=None,
-                 rpad=None,
-                 width=80):
+
+    def __init__(
+        self, left, right, rule, pad=' ', first=None, final=None, rpad=None, width=80
+    ):
         """Create a new Boxer.
 
         Parameters
@@ -69,8 +64,9 @@ class Boxer():
         if width is None:
             width = self.width
         # textwidth is from the box size, minus the two ends, minus two pads
-        return (width - len(self.left) - len(self.right) - len(self.lpad) -
-                len(self.rpad))
+        return (
+            width - len(self.left) - len(self.right) - len(self.lpad) - len(self.rpad)
+        )
 
     def box(self, text, width=None, wrap=True, strip=True):
         """Box some text, returned as a joined string.
@@ -125,8 +121,8 @@ class Boxer():
             toprule = self.first
             bottomrule = self.final
         elif len(self.rule) == 1:
-            toprule = self.first + self.rule*toprulewidth + self.right
-            bottomrule = self.left + self.rule*bottomrulewidth + self.final
+            toprule = self.first + self.rule * toprulewidth + self.right
+            bottomrule = self.left + self.rule * bottomrulewidth + self.final
         else:
             # yapf: disable
             toprule = (
@@ -150,7 +146,7 @@ class Boxer():
                 wrappedlines = textwrap.wrap(line, width=textwidth)
             else:
                 if len(line) > textwidth:
-                    warnings.warn(f"box: line {i} exceeds box dimensions")
+                    warnings.warn(f'box: line {i} exceeds box dimensions')
                 wrappedlines = [line]
 
             for wline in wrappedlines:

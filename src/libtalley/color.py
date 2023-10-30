@@ -31,7 +31,7 @@ def iscmyk(t: tuple):
 
 class Color:
     """RGB- and CMYK-based color representation.
-    
+
     Attributes
     ----------
     cmyk : Tuple[int, int, int, int], optional
@@ -43,6 +43,7 @@ class Color:
     rgb1 : Tuple[float, float, float]
         The color in RGB1 floating point (0.0--1.0) format.
     """
+
     def __init__(self, rgb, cmyk=None, rgb1=False):
         """Create a new Color.
 
@@ -64,21 +65,21 @@ class Color:
         """
         if cmyk is not None:
             if not iscmyk(cmyk):
-                raise ValueError(f"Invalid CMYK tuple: {cmyk!r}")
+                raise ValueError(f'Invalid CMYK tuple: {cmyk!r}')
             self._cmyk = tuple(cmyk)
         else:
             self._cmyk = None
 
         if rgb1:
             if not isrgb1(rgb):
-                raise ValueError(f"Invalid RGB1 tuple: {rgb!r}")
-            self._rgb = tuple(int(v*255) for v in rgb)
+                raise ValueError(f'Invalid RGB1 tuple: {rgb!r}')
+            self._rgb = tuple(int(v * 255) for v in rgb)
             self._rgb1 = tuple(float(v) for v in rgb)
         else:
             if not isrgb(rgb):
-                raise ValueError(f"Invalid RGB tuple: {rgb!r}")
+                raise ValueError(f'Invalid RGB tuple: {rgb!r}')
             self._rgb = tuple(int(v) for v in rgb)
-            self._rgb1 = tuple(v/255 for v in rgb)
+            self._rgb1 = tuple(v / 255 for v in rgb)
 
         self._hex = '#' + ''.join(f'{v:02x}' for v in self._rgb)
 
@@ -110,7 +111,7 @@ class Color:
         return self._cmyk
 
     def __repr__(self):
-        return f"Color(rgb={self.rgb}, cmyk={self.cmyk})"
+        return f'Color(rgb={self.rgb}, cmyk={self.cmyk})'
 
     @classmethod
     def from_name(cls, name: str):

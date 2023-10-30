@@ -14,9 +14,9 @@ import unyt
 
 from . import units
 
-#===============================================================================
+# ===============================================================================
 # Constants
-#===============================================================================
+# ===============================================================================
 TRUE_VALUES = ['T']
 FALSE_VALUES = ['F']
 NA_VALUES = ['\N{EN DASH}']
@@ -24,14 +24,15 @@ NA_VALUES = ['\N{EN DASH}']
 
 class SteelError(Exception):
     """Steel design errors."""
+
     pass
 
 
-#===============================================================================
+# ===============================================================================
 # Materials
-#===============================================================================
+# ===============================================================================
 @dataclasses.dataclass
-class SteelMaterial():
+class SteelMaterial:
     """A steel material.
 
     Parameters
@@ -49,6 +50,7 @@ class SteelMaterial():
     Rt : float
         Expected tensile strength factor. Dimensionless.
     """
+
     name: str
     E: unyt.unyt_quantity
     Fy: unyt.unyt_quantity
@@ -67,16 +69,17 @@ class SteelMaterial():
         self.Rt = get_factor(self.Rt).item()
 
         if self.Fy > self.Fu:
-            raise SteelError('SteelMaterial: yield strength must'
-                             ' be less than tensile strength')
+            raise SteelError(
+                'SteelMaterial: yield strength must' ' be less than tensile strength'
+            )
 
     @property
     def eFy(self):
-        return self.Fy*self.Ry
+        return self.Fy * self.Ry
 
     @property
     def eFu(self):
-        return self.Fu*self.Rt
+        return self.Fu * self.Rt
 
     @classmethod
     def from_name(cls, name: str, grade: str = None, application: str = None):
@@ -148,8 +151,9 @@ class SteelMaterial():
 def _check_deprecated_material(name, grade):
     if ' Gr. ' in name:
         _name, grade = name.split(' Gr. ')
-        warnings.warn(f'Convert old material name {name!r} to '
-                      f'({_name!r}, grade={grade!r})')
+        warnings.warn(
+            f'Convert old material name {name!r} to ({_name!r}, grade={grade!r})'
+        )
         return (_name, grade)
     else:
         return (name, grade)
@@ -162,10 +166,10 @@ def _load_materials_db(filename):
     return material_df
 
 
-#===============================================================================
+# ===============================================================================
 # Shapes table
-#===============================================================================
-class ShapesTable():
+# ===============================================================================
+class ShapesTable:
     def __init__(self, data: pd.DataFrame, units: pd.Series, name: str = None):
         """
         Parameters
@@ -264,13 +268,15 @@ class ShapesTable():
         return self.data.at[index, 'AISC_Manual_Label']
 
     @classmethod
-    def from_file(cls,
-                  file,
-                  units,
-                  name=None,
-                  true_values=TRUE_VALUES,
-                  false_values=FALSE_VALUES,
-                  na_values=NA_VALUES):
+    def from_file(
+        cls,
+        file,
+        units,
+        name=None,
+        true_values=TRUE_VALUES,
+        false_values=FALSE_VALUES,
+        na_values=NA_VALUES,
+    ):
         """Load a shapes table from a file.
 
         Parameters
@@ -289,10 +295,12 @@ class ShapesTable():
             List of values to convert to ``nan``. (default: ['–']) (note that
             this is an en-dash U+2013, not an ASCII hyphen U+002D)
         """
-        data: pd.DataFrame = pd.read_csv(file,
-                                         true_values=true_values,
-                                         false_values=false_values,
-                                         na_values=na_values)
+        data: pd.DataFrame = pd.read_csv(
+            file,
+            true_values=true_values,
+            false_values=false_values,
+            na_values=na_values,
+        )
         data.index = pd.Index(data['AISC_Manual_Label'].str.casefold(), name='')
 
         # Convert fractions to floats
@@ -317,7 +325,7 @@ class ShapesTable():
 
 
 @dataclasses.dataclass
-class _ShapesResource():
+class _ShapesResource:
     name: str
     units: Dict[str, str]
     filename: str
@@ -353,11 +361,13 @@ def _register_resources():
     s = importlib.resources.read_text(__package__, 'shapes-resources.json')
     shapes_resources: Dict[str, dict] = json.loads(s)['shapes_resources']
     for key, resource in shapes_resources.items():
-        _ShapesResource.register(key,
-                                 name=resource['name'],
-                                 filename=resource['filename'],
-                                 units=resource['units'],
-                                 package=resource.get('package', __package__))
+        _ShapesResource.register(
+            key,
+            name=resource['name'],
+            filename=resource['filename'],
+            units=resource['units'],
+            package=resource.get('package', __package__),
+        )
 
 
 _register_resources()
@@ -377,8 +387,10 @@ def property_lookup(shape, prop):
     prop : str
         Name of the property to look up.
     """
-    warnings.warn('Replace `property_lookup(shape, prop)` with '
-                  '`shapes_US.get_prop(shape, prop)`')
+    warnings.warn(
+        'Replace `property_lookup(shape, prop)` with '
+        '`shapes_US.get_prop(shape, prop)`'
+    )
     return shapes_US.data.at[str(shape).casefold(), prop]
 
 
@@ -401,14 +413,16 @@ def lightest_shape(shape_list):
     >>> lightest_shape(['W14X82', 'HSS4X4X1/2'])
     'HSS4X4X1/2'
     """
-    warnings.warn('Replace `lightest_shape(shape_list)` with '
-                  '`shapes_US.lightest_shape(shape_list)`')
+    warnings.warn(
+        'Replace `lightest_shape(shape_list)` with '
+        '`shapes_US.lightest_shape(shape_list)`'
+    )
     return shapes_US.lightest_shape(shape_list)
 
 
-#===============================================================================
+# ===============================================================================
 # Design
-#===============================================================================
+# ===============================================================================
 class MemberType(enum.Enum):
     BRACE = 'BRACE'
     BEAM = 'BEAM'
@@ -428,11 +442,13 @@ class WtrResults(NamedTuple):
     bt_max: float
 
 
-def check_seismic_wtr_wide_flange(shape: str,
-                                  mem_type: Union[str, MemberType],
-                                  level: Union[str, Ductility],
-                                  Ca: float,
-                                  material: SteelMaterial = None) -> WtrResults:
+def check_seismic_wtr_wide_flange(
+    shape: str,
+    mem_type: Union[str, MemberType],
+    level: Union[str, Ductility],
+    Ca: float,
+    material: SteelMaterial = None,
+) -> WtrResults:
     """Check the width-to-thickness ratio of a W shape for the given ductility.
 
     Parameters
@@ -479,7 +495,7 @@ def check_seismic_wtr_wide_flange(shape: str,
 
     if material is None:
         material = SteelMaterial.from_name('A992')
-    E_eFy = np.sqrt(material.E/material.eFy).to_value('dimensionless')
+    E_eFy = np.sqrt(material.E / material.eFy).to_value('dimensionless')
 
     ht = shapes_US.get_prop(shape, 'h/tw').value
     bt = shapes_US.get_prop(shape, 'bf/2tf').value
@@ -490,28 +506,28 @@ def check_seismic_wtr_wide_flange(shape: str,
 
 def _wtr_brace(E_eFy, Ca):
     """Maximum width-to-thickness ratio for a brace."""
-    ht_max = 1.57*E_eFy
+    ht_max = 1.57 * E_eFy
     bt_max = ht_max
     return ht_max, bt_max
 
 
 def _wtr_beam_column_moderate(E_eFy, Ca):
     """Maximum width-to-thickness ratio for a moderately ductile beam/column."""
-    bt_max = 0.40*E_eFy
+    bt_max = 0.40 * E_eFy
     if Ca <= 0.114:
-        ht_max = 3.96*E_eFy*(1 - 3.04*Ca)
+        ht_max = 3.96 * E_eFy * (1 - 3.04 * Ca)
     else:
-        ht_max = max(1.29*E_eFy*(2.12 - Ca), 1.57*E_eFy)
+        ht_max = max(1.29 * E_eFy * (2.12 - Ca), 1.57 * E_eFy)
     return ht_max, bt_max
 
 
 def _wtr_beam_column_high(E_eFy, Ca):
     """Maximum width-to-thickness ratio for a highly ductile beam/column."""
-    bt_max = 0.32*E_eFy
+    bt_max = 0.32 * E_eFy
     if Ca <= 0.114:
-        ht_max = 2.57*E_eFy*(1 - 1.04*Ca)
+        ht_max = 2.57 * E_eFy * (1 - 1.04 * Ca)
     else:
-        ht_max = max(0.88*E_eFy*(2.68 - Ca), 1.57*E_eFy)
+        ht_max = max(0.88 * E_eFy * (2.68 - Ca), 1.57 * E_eFy)
     return ht_max, bt_max
 
 
@@ -521,8 +537,9 @@ class Capacity(NamedTuple):
     postbuckling: unyt.unyt_quantity
 
 
-def brace_capacity(shape: str, length: unyt.unyt_quantity,
-                   material: SteelMaterial) -> Capacity:
+def brace_capacity(
+    shape: str, length: unyt.unyt_quantity, material: SteelMaterial
+) -> Capacity:
     """
     Parameters
     ----------
@@ -535,18 +552,18 @@ def brace_capacity(shape: str, length: unyt.unyt_quantity,
     """
     shape = shapes_US.get_shape(shape)
     ry = shape['ry']
-    Fe = np.pi**2*material.E/(length/ry)**2
+    Fe = np.pi**2 * material.E / (length / ry) ** 2
     RyFy = material.eFy
-    RyFy_Fe = RyFy/Fe
+    RyFy_Fe = RyFy / Fe
 
     if RyFy_Fe <= 2.25:
-        Fcre = 0.658**RyFy_Fe*RyFy
+        Fcre = 0.658**RyFy_Fe * RyFy
     else:
-        Fcre = 0.877*Fe
+        Fcre = 0.877 * Fe
 
     Ag = shape['A']
-    tension = RyFy*Ag
-    compression = min(tension, 1/0.877*Fcre*Ag)
-    postbuckling = 0.3*compression
+    tension = RyFy * Ag
+    compression = min(tension, 1 / 0.877 * Fcre * Ag)
+    postbuckling = 0.3 * compression
 
     return Capacity(tension, compression, postbuckling)
