@@ -64,7 +64,7 @@ def build_pypi(c):
     rmtree(pypi_build_dir, ignore_errors=True)
 
     run(['git', 'clone', '.', pypi_build_dir])
-    run(['python', 'setup.py', 'sdist', 'bdist_wheel'], cwd=pypi_build_dir)
+    run(['python', '-m', 'build'], cwd=pypi_build_dir)
 
     squawk('Moving build artifacts to', PYPI_DIST_DIR)
     PYPI_DIST_DIR.mkdir(parents=True, exist_ok=True)
