@@ -25,8 +25,6 @@ NA_VALUES = ['\N{EN DASH}']
 class SteelError(Exception):
     """Steel design errors."""
 
-    pass
-
 
 # ===============================================================================
 # Materials
@@ -82,7 +80,9 @@ class SteelMaterial:
         return self.Fu * self.Rt
 
     @classmethod
-    def from_name(cls, name: str, grade: str = None, application: str = None):
+    def from_name(
+        cls, name: str, grade: str | None = None, application: str | None = None
+    ):
         """Look up a steel material based on name, grade, and application.
 
         All look-ups are case-insensitive.
@@ -152,7 +152,8 @@ def _check_deprecated_material(name, grade):
     if ' Gr. ' in name:
         _name, grade = name.split(' Gr. ')
         warnings.warn(
-            f'Convert old material name {name!r} to ({_name!r}, grade={grade!r})'
+            f'Convert old material name {name!r} to ({_name!r}, grade={grade!r})',
+            stacklevel=3,
         )
         return (_name, grade)
     else:
@@ -170,7 +171,7 @@ def _load_materials_db(filename):
 # Shapes table
 # ===============================================================================
 class ShapesTable:
-    def __init__(self, data: pd.DataFrame, units: pd.Series, name: str = None):
+    def __init__(self, data: pd.DataFrame, units: pd.Series, name: str | None = None):
         """
         Parameters
         ----------
@@ -294,7 +295,7 @@ class ShapesTable:
         na_values : list, optional
             List of values to convert to ``nan``. (default: ['–']) (note that
             this is an en-dash U+2013, not an ASCII hyphen U+002D)
-        """
+        """  # noqa: RUF002
         data: pd.DataFrame = pd.read_csv(
             file,
             true_values=true_values,
@@ -389,7 +390,8 @@ def property_lookup(shape, prop):
     """
     warnings.warn(
         'Replace `property_lookup(shape, prop)` with '
-        '`shapes_US.get_prop(shape, prop)`'
+        '`shapes_US.get_prop(shape, prop)`',
+        stacklevel=2,
     )
     return shapes_US.data.at[str(shape).casefold(), prop]
 
@@ -415,7 +417,8 @@ def lightest_shape(shape_list):
     """
     warnings.warn(
         'Replace `lightest_shape(shape_list)` with '
-        '`shapes_US.lightest_shape(shape_list)`'
+        '`shapes_US.lightest_shape(shape_list)`',
+        stacklevel=2,
     )
     return shapes_US.lightest_shape(shape_list)
 

@@ -109,7 +109,7 @@ def show_matrix(
             raise ValueError(
                 f'vector_style {vector_style!r} must be one '
                 f'of {set(vector_styles.keys())}'
-            )
+            ) from None
         array = array.reshape(new_shape)
 
     # Rounding

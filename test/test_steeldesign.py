@@ -1,5 +1,5 @@
 import unyt
-from pytest import raises
+import pytest
 
 import libtalley.steeldesign as steel
 
@@ -38,10 +38,10 @@ def test_material_lookup_slice_match_2():
 
 
 def test_material_lookup_too_many_results():
-    with raises(ValueError):
+    with pytest.raises(ValueError, match=r'^Multiple materials found:\n'):
         steel.SteelMaterial.from_name('A500')
 
 
 def test_material_lookup_no_results():
-    with raises(ValueError):
+    with pytest.raises(ValueError, match=r'^No materials found$'):
         steel.SteelMaterial.from_name('ThisIsNotAMaterial')

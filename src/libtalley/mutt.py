@@ -34,5 +34,5 @@ def send(to, subject, message, attach=None):
             attach = [attach]
         cmd.extend(['-a', *attach, '--'])
 
-    process = sub.run(cmd, input=message.encode())
+    process = sub.run(cmd, input=message.encode(), check=False)
     return process

@@ -9,12 +9,11 @@ try:
 except ImportError:
     xr = None
 
-from libtalley import units
 from libtalley.units import UnitInputParser, get_unit_system, process_unit_input
 
 
 def test_parse_units_no_default():
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match=r'^No default units set; cannot parse'):
         process_unit_input([1, 2, 3, 4])
 
 
@@ -46,7 +45,7 @@ def test_parse_units_convert_success():
 
 
 def test_parse_units_bad_tuple():
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match=r'^Input tuple must have 2 items \(got 1\)'):
         process_unit_input(([1, 2, 3, 4],))
 
 
@@ -95,12 +94,12 @@ if xr is not None:
 
     def test_parse_units_xarray_no_units():
         in_ = xr.DataArray([4, 3, 2, 1])
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match=r'^No default units set; cannot parse'):
             process_unit_input(in_)
 
     def test_parse_units_xarray_no_accept_bad_casing():
         in_ = xr.DataArray([4, 3, 2, 1], attrs={'Units': 'm'})
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match=r'^No default units set; cannot parse'):
             process_unit_input(in_)
 
 

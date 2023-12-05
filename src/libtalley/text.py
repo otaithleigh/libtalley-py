@@ -146,7 +146,7 @@ class Boxer:
                 wrappedlines = textwrap.wrap(line, width=textwidth)
             else:
                 if len(line) > textwidth:
-                    warnings.warn(f'box: line {i} exceeds box dimensions')
+                    warnings.warn(f'box: line {i} exceeds box dimensions', stacklevel=2)
                 wrappedlines = [line]
 
             for wline in wrappedlines:
@@ -154,7 +154,7 @@ class Boxer:
 
         lines.append(bottomrule)
         if strip:
-            lines = [l.rstrip() for l in lines]
+            lines = [line.rstrip() for line in lines]
         return lines
 
 

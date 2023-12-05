@@ -142,7 +142,7 @@ def create_unit_system(
     current_mks: UnitLike = None,
     luminous_intensity: UnitLike = None,
     logarithmic: UnitLike = None,
-    name: str = None,
+    name: str | None = None,
     registry: t.Optional[unyt.UnitRegistry] = None,
     consistent: bool = False,
     strict_dims: bool = True,
@@ -325,7 +325,7 @@ def check_consistent_unit_system(system: unyt.UnitSystem):
     """
     # Get base dims as str; subscript from 1:-1 to drop parentheses from
     # dimension names
-    base_dims = list(map(lambda d: str(d)[1:-1], system.base_units))
+    base_dims = [str(d)[1:-1] for d in system.base_units]
     base_units = dict(zip(base_dims, system.base_units.values()))
 
     # Create unit system without convenience units
@@ -767,7 +767,7 @@ def _Unit_get_base_equivalent_no_em(self, unit_system=None):
     try:
         new_units = unit_system[self.dimensions]
     except MissingMKSCurrent:
-        raise UnitsNotReducible(self.units, unit_system)
+        raise UnitsNotReducible(self.units, unit_system)  # noqa: B904 -- monkeypatching, don't change the error
     return unyt.Unit(new_units, registry=self.registry)
 
 

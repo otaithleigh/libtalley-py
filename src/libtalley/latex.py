@@ -18,7 +18,7 @@ def diff(f, x, n=1, partial=False):
     if partial:
         differ = R'\partial'
     else:
-        differ = Rf'\mathrm{{d}}'
+        differ = R'\mathrm{d}'
     if n > 1:
         level = f'^{n}'
     else:
