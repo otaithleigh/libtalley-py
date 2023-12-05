@@ -485,8 +485,8 @@ def check_seismic_wtr_wide_flange(
     mem_type = MemberType(mem_type)
     level = Ductility(level)
     wtr_max = {
-        ('BRACE', 'MODERATE'): _wtr_brace,
-        ('BRACE', 'HIGH'): _wtr_brace,
+        ('BRACE', 'MODERATE'): _wtr_brace_moderate,
+        ('BRACE', 'HIGH'): _wtr_brace_high,
         ('COLUMN', 'MODERATE'): _wtr_beam_column_moderate,
         ('COLUMN', 'HIGH'): _wtr_beam_column_high,
         ('BEAM', 'MODERATE'): _wtr_beam_column_moderate,
@@ -504,10 +504,17 @@ def check_seismic_wtr_wide_flange(
     return WtrResults(ht <= ht_max and bt <= bt_max, ht, ht_max, bt, bt_max)
 
 
-def _wtr_brace(E_eFy, Ca):
+def _wtr_brace_moderate(E_eFy, Ca):
     """Maximum width-to-thickness ratio for a brace."""
     ht_max = 1.57 * E_eFy
-    bt_max = ht_max
+    bt_max = 0.40 * E_eFy
+    return ht_max, bt_max
+
+
+def _wtr_brace_high(E_eFy, Ca):
+    """Maximum width-to-thickness ratio for a brace."""
+    ht_max = 1.57 * E_eFy
+    bt_max = 0.32 * E_eFy
     return ht_max, bt_max
 
 
