@@ -45,3 +45,37 @@ def test_material_lookup_too_many_results():
 def test_material_lookup_no_results():
     with pytest.raises(ValueError, match=r'^No materials found$'):
         steel.SteelMaterial.from_name('ThisIsNotAMaterial')
+
+
+# ===============================================================================
+# Width-to-thickness ratio check
+# ===============================================================================
+@pytest.fixture()
+def check_params():
+    # shape, mem_type, level, Pr
+    Ag = 8.79
+    Ry = 1.1
+    Fy = 50
+    Py = unyt.unyt_quantity(Ry * Fy * Ag, 'kip')
+    return ('W12x30', 'BEAM', 'HIGH', 0.52 * Py)
+
+
+def test_wtr_check_Pr_sign_should_not_matter(check_params):
+    shape, mem_type, level, Pr = check_params
+    check_pos = steel.check_seismic_wtr_wide_flange(shape, mem_type, level, Pr)
+    check_neg = steel.check_seismic_wtr_wide_flange(shape, mem_type, level, -Pr)
+    assert check_pos == check_neg
+
+
+def test_wtr_check_2016(check_params):
+    check = steel.check_seismic_wtr_wide_flange(*check_params, edition=2016)
+    assert check.passed is False
+    assert check.ht < check.ht_max
+    assert check.bt > check.bt_max
+
+
+def test_wtr_check_2022(check_params):
+    check = steel.check_seismic_wtr_wide_flange(*check_params, edition=2022)
+    assert check.passed is False
+    assert check.ht > check.ht_max
+    assert check.bt > check.bt_max

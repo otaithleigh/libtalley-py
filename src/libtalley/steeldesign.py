@@ -1,12 +1,14 @@
 from __future__ import annotations
 
+import abc
 import dataclasses
 import enum
 import fractions
 import importlib.resources
 import json
-from typing import ClassVar, Dict, NamedTuple, Union
+import math
 import warnings
+from typing import ClassVar, Dict, Literal, NamedTuple, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -445,12 +447,138 @@ class WtrResults(NamedTuple):
     bt_max: float
 
 
+class WideFlangeWtrChecker(abc.ABC):
+    ht: float
+    bt: float
+    E_eFy: float
+    Ca: float
+
+    def __init__(self, shape: str, material: SteelMaterial, Pr: unyt.unyt_quantity):
+        self.ht = shapes_US.get_prop(shape, 'h/tw').item()
+        self.bt = shapes_US.get_prop(shape, 'bf/2tf').item()
+        self.E_eFy = math.sqrt(material.E / material.eFy)
+        self.Ca = self._calculate_Ca(shape, material, Pr)
+
+    @abc.abstractmethod
+    def _calculate_Ca(
+        self, shape: str, material: SteelMaterial, Pr: unyt.unyt_quantity
+    ) -> float:
+        """Calculate Ca for the given shape and factored axial load.
+
+        Ca is defined differently for different editions of the Provisions.
+        """
+
+    def wtr_max(self, mem_type: MemberType, level: Ductility) -> Tuple[float, float]:
+        return {
+            ('BRACE', 'MODERATE'): self._wtr_brace_moderate,
+            ('BRACE', 'HIGH'): self._wtr_brace_high,
+            ('COLUMN', 'MODERATE'): self._wtr_beam_column_moderate,
+            ('COLUMN', 'HIGH'): self._wtr_beam_column_high,
+            ('BEAM', 'MODERATE'): self._wtr_beam_column_moderate,
+            ('BEAM', 'HIGH'): self._wtr_beam_column_high,
+        }[mem_type.name, level.name](self.E_eFy, self.Ca)
+
+    def check(self, mem_type: MemberType, level: Ductility) -> WtrResults:
+        ht_max, bt_max = self.wtr_max(mem_type, level)
+        return WtrResults(
+            self.ht <= ht_max and self.bt <= bt_max, self.ht, ht_max, self.bt, bt_max
+        )
+
+
+class WideFlangeWtrChecker2016(WideFlangeWtrChecker):
+    def _calculate_Ca(
+        self, shape: str, material: SteelMaterial, Pr: unyt.unyt_quantity
+    ) -> float:
+        # LRFD: Ca = Pu / (φ Ry Fy Ag)
+        Ag = shapes_US.get_prop(shape, 'A')
+        φ = 0.9
+        return (abs(Pr) / (φ * material.eFy * Ag)).to_value('dimensionless')
+
+    @staticmethod
+    def _wtr_brace_moderate(E_eFy, Ca):
+        """Maximum width-to-thickness ratio for a moderately ductile wide-flange brace."""
+        ht_max = 1.57 * E_eFy
+        bt_max = 0.40 * E_eFy
+        return ht_max, bt_max
+
+    @staticmethod
+    def _wtr_brace_high(E_eFy, Ca):
+        """Maximum width-to-thickness ratio for a highly ductile wide-flange brace."""
+        ht_max = 1.57 * E_eFy
+        bt_max = 0.32 * E_eFy
+        return ht_max, bt_max
+
+    @staticmethod
+    def _wtr_beam_column_moderate(E_eFy, Ca):
+        """Maximum width-to-thickness ratio for a moderately ductile beam/column."""
+        bt_max = 0.40 * E_eFy
+        if Ca <= 0.114:
+            ht_max = 3.96 * E_eFy * (1 - 3.04 * Ca)
+        else:
+            ht_max = max(1.29 * E_eFy * (2.12 - Ca), 1.57 * E_eFy)
+        return ht_max, bt_max
+
+    @staticmethod
+    def _wtr_beam_column_high(E_eFy, Ca):
+        """Maximum width-to-thickness ratio for a highly ductile beam/column."""
+        bt_max = 0.32 * E_eFy
+        if Ca <= 0.114:
+            ht_max = 2.57 * E_eFy * (1 - 1.04 * Ca)
+        else:
+            ht_max = max(0.88 * E_eFy * (2.68 - Ca), 1.57 * E_eFy)
+        return ht_max, bt_max
+
+
+class WideFlangeWtrChecker2022(WideFlangeWtrChecker):
+    def _calculate_Ca(
+        self, shape: str, material: SteelMaterial, Pr: unyt.unyt_quantity
+    ) -> float:
+        # LRFD: Ca = α Pr / (Ry Fy Ag); α = 1.0
+        Ag = shapes_US.get_prop(shape, 'A')
+        return (abs(Pr) / (material.eFy * Ag)).to_value('dimensionless')
+
+    @staticmethod
+    def _wtr_brace_moderate(E_eFy, Ca):
+        """Maximum width-to-thickness ratio for a moderately ductile wide-flange brace."""
+        ht_max = 1.49 * E_eFy
+        bt_max = 0.38 * E_eFy
+        return ht_max, bt_max
+
+    @staticmethod
+    def _wtr_brace_high(E_eFy, Ca):
+        """Maximum width-to-thickness ratio for a highly ductile wide-flange brace."""
+        ht_max = 1.49 * E_eFy
+        bt_max = 0.30 * E_eFy
+        return ht_max, bt_max
+
+    @staticmethod
+    def _wtr_beam_column_moderate(E_eFy, Ca):
+        """Maximum width-to-thickness ratio for a moderately ductile beam/column."""
+        bt_max = 0.38 * E_eFy
+        if Ca <= 0.113:
+            ht_max = 3.76 * (1 - 3.05 * Ca) * E_eFy
+        else:
+            ht_max = max(2.61 * (1 - 0.49 * Ca) * E_eFy, 1.56 * E_eFy)
+        return ht_max, bt_max
+
+    @staticmethod
+    def _wtr_beam_column_high(E_eFy, Ca):
+        """Maximum width-to-thickness ratio for a highly ductile beam/column."""
+        bt_max = 0.30 * E_eFy
+        if Ca <= 0.113:
+            ht_max = 2.45 * (1 - 1.04 * Ca) * E_eFy
+        else:
+            ht_max = max(2.26 * (1 - 0.38 * Ca) * E_eFy, 1.56 * E_eFy)
+        return ht_max, bt_max
+
+
 def check_seismic_wtr_wide_flange(
     shape: str,
     mem_type: Union[str, MemberType],
     level: Union[str, Ductility],
-    Ca: float,
-    material: SteelMaterial = None,
+    Pr: unyt.unyt_quantity,
+    material: SteelMaterial | None = None,
+    edition: Literal[2016, 2022] = 2016,
 ) -> WtrResults:
     """Check the width-to-thickness ratio of a W shape for the given ductility.
 
@@ -462,11 +590,13 @@ def check_seismic_wtr_wide_flange(
         MemberType of the member.
     level : Ductility
         Level of Ductility being checked.
-    Ca : float
-        = P_u / (φ_c * P_y); adjusts maximum web width-to-thickness ratio
-        for beams and columns. Does not affect braces. Should be < 1.0.
+    Pr : unyt_quantity
+        Factored axial load demand.
     material : SteelMaterial, optional
-        Material to use (default A992, Fy = 50 ksi)
+        Material to use. (default A992, Fy = 50 ksi)
+    edition : {2016, 2022}
+        Edition of the AISC Seismic Provisions to use when checking the width-
+        to-thickness ratio. (default: 2016)
 
     Returns
     -------
@@ -483,62 +613,22 @@ def check_seismic_wtr_wide_flange(
 
     Reference
     ---------
-    AISC 341-16, Table D1.1 (pp. 9.1-14 -- 9.1-17)
+    - AISC 341-16, Table D1.1 (pp. 9.1-14 -- 9.1-17)
+    - AISC 341-22, Tables D1.1a, D1.1b (pp. 9.1-16 -- 9.1-21)
     """
     mem_type = MemberType(mem_type)
     level = Ductility(level)
-    wtr_max = {
-        ('BRACE', 'MODERATE'): _wtr_brace_moderate,
-        ('BRACE', 'HIGH'): _wtr_brace_high,
-        ('COLUMN', 'MODERATE'): _wtr_beam_column_moderate,
-        ('COLUMN', 'HIGH'): _wtr_beam_column_high,
-        ('BEAM', 'MODERATE'): _wtr_beam_column_moderate,
-        ('BEAM', 'HIGH'): _wtr_beam_column_high,
-    }[mem_type.value, level.value]
-
     if material is None:
         material = SteelMaterial.from_name('A992')
-    E_eFy = np.sqrt(material.E / material.eFy).to_value('dimensionless')
 
-    ht = shapes_US.get_prop(shape, 'h/tw').value
-    bt = shapes_US.get_prop(shape, 'bf/2tf').value
-    ht_max, bt_max = wtr_max(E_eFy, Ca)
-
-    return WtrResults(ht <= ht_max and bt <= bt_max, ht, ht_max, bt, bt_max)
-
-
-def _wtr_brace_moderate(E_eFy, Ca):
-    """Maximum width-to-thickness ratio for a brace."""
-    ht_max = 1.57 * E_eFy
-    bt_max = 0.40 * E_eFy
-    return ht_max, bt_max
-
-
-def _wtr_brace_high(E_eFy, Ca):
-    """Maximum width-to-thickness ratio for a brace."""
-    ht_max = 1.57 * E_eFy
-    bt_max = 0.32 * E_eFy
-    return ht_max, bt_max
-
-
-def _wtr_beam_column_moderate(E_eFy, Ca):
-    """Maximum width-to-thickness ratio for a moderately ductile beam/column."""
-    bt_max = 0.40 * E_eFy
-    if Ca <= 0.114:
-        ht_max = 3.96 * E_eFy * (1 - 3.04 * Ca)
+    if edition == 2016:
+        checker_cls = WideFlangeWtrChecker2016
+    elif edition == 2022:
+        checker_cls = WideFlangeWtrChecker2022
     else:
-        ht_max = max(1.29 * E_eFy * (2.12 - Ca), 1.57 * E_eFy)
-    return ht_max, bt_max
+        raise ValueError(f'Unsupported Seismic Provisions edition: {edition!r}')
 
-
-def _wtr_beam_column_high(E_eFy, Ca):
-    """Maximum width-to-thickness ratio for a highly ductile beam/column."""
-    bt_max = 0.32 * E_eFy
-    if Ca <= 0.114:
-        ht_max = 2.57 * E_eFy * (1 - 1.04 * Ca)
-    else:
-        ht_max = max(0.88 * E_eFy * (2.68 - Ca), 1.57 * E_eFy)
-    return ht_max, bt_max
+    return checker_cls(shape, material, Pr).check(mem_type, level)
 
 
 class Capacity(NamedTuple):
