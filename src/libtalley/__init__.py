@@ -2,7 +2,7 @@
 
 import importlib.resources
 
-from .color import Color
-from .utils import *
+from .color import Color  # noqa: F401
+from .utils import *  # noqa: F403
 
 __version__ = importlib.resources.read_text(__name__, '__version__')
