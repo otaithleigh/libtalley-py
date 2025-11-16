@@ -1,9 +1,51 @@
 [build-system]
-requires = [
-    "setuptools >= 40.9.0",
-    "wheel",
-]
+requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
+
+
+# ------------------------------------------------------------------------------
+# Metadata
+# ------------------------------------------------------------------------------
+[project]
+name = "libtalley"
+authors = [{ name = "Peter Talley", email = "peterctalley@gmail.com" }]
+readme = { file = "README.md", content-type = "text/markdown" }
+license = "MIT"
+license-files = ["LICENSE.txt"]
+
+requires-python = ">=3.8"
+dependencies = [
+    "numpy>=1.15.0",
+    "pandas",
+    "tabulate",
+    "unyt>=2.8.0",
+]
+
+dynamic = ["version"]
+
+[project.optional-dependencies]
+full = [
+    "matplotlib",
+    "xarray",
+]
+
+[dependency-groups]
+test = [
+    "pytest>=8.3.5",
+]
+dev = [
+    "ipykernel>=6.29.5",
+    "ipython>=8.12.3",
+    "ruff>=0.14.5",
+    "twine>=6.1.0",
+    {include-group = "test"},
+]
+
+[project.urls]
+Homepage = "https://github.com/otaithleigh/libtalley-py"
+
+[tool.setuptools.dynamic]
+version = { file = "src/libtalley/__version__" }
 
 
 # ------------------------------------------------------------------------------
