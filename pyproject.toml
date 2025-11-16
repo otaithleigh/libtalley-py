@@ -28,7 +28,6 @@ ignore = [
     'PLR0915',  # annoying heuristic
     'PLR2004',  # Magic values
     'TRY003',  # Messages in exception
-    'TRY200',  # Duplicate with B904
 ]
 allowed-confusables = ['α', 'γ', 'ρ']
 
